@@ -1,5 +1,11 @@
 # 物联告警规则与记录工作区
 
+## 操作失败提示
+
+S 级局部修复：`hooks/useDeviceAlarmWorkspace.ts` 的操作包装只负责捕获失败并恢复操作状态，接口错误由全局请求层在右上角统一通知，不再额外显示居中的“操作失败，请重试”。保存失败时保留弹窗和输入，允许重试；不调整接口、权限或告警规则范围。
+
+验证：Node 22.18.0 下，在 `runtime-ui` 执行 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs`，237/237 通过；使用现有请求替身挂载真实工作区 hook，模拟 PUT 返回 403，确认不追加页面错误提示、保留弹窗及草稿、释放 busy/saving 状态，并可再次保存成功。按模块 tsconfig 对修改 hook 做 TypeScript 语法及语义定向检查，0 条诊断；未执行全工作区类型检查，模块无独立 lint 脚本。在 `runtime-ui/jetlinks-web-core` 执行 `node ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-alarm-single-error-build -- --module-name device-manager-ui`，生产构建通过（2m19s，保留既有大包及依赖提示）；`git diff --check` 通过。真实页面上右上角通知与居中提示的展示仍待复验，未重放后端保存请求。
+
 ## 通知交互对齐视联
 
 人员选择弹层按单行双列展示：名称靠左、用户名靠右，两列长文本省略。继续使用现有人员查询、分页和缓存，用户名仅作候选辨识，保存仍只提交用户 ID。 最终交付验证：最新 `2.20` PR 工作区复跑 237/237 通过；原工作区生产构建通过（7m43s），涉及的生产实现与 PR 工作区一致，语言文件保留最新基线增加的其他文案。全量类型检查 1,730 条诊断，变更生产文件无命中；无独立 lint，人员组件样式门禁通过。隔离浏览器确认同名人员、缺失用户名、长文本双列省略及缓存选中回显；真实通知投递仍待联调。
