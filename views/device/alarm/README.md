@@ -535,6 +535,10 @@
 - 目录已有 components、hooks、API/types 的职责边界，继续归入这些目录，不新增跨模块深引用。
 
 ## 接口与权限
+
+- 通知模板状态读取：`views/device/alarm/api.ts/queryNotifyTemplates` 调用 `GET /notify/channel/{providerId}/_query-with-templates`，需要同时具备 `notify-channel:query` 和 `template:query`，保存权限不能替代查询权限。
+- 菜单修复范围：`baseMenu.json` 中 owner 为 `iot`、`app` 的两处 `iot-user/device/alarm` 菜单均补齐上述查询权限，保留原有 `notify-channel:save`；不修改后端接口或资产数据权限。已有环境需要同步菜单、更新对应角色/应用授权并刷新登录态，不能只部署前端静态文件。
+- 验证：运行时菜单 JSON 解析、两入口权限契约及范围检查、`git diff --check` 通过；在 `runtime-ui/modules/device-manager-ui` 使用 Node 22.18.0 执行 `node scripts/test-alarm-workspace.mjs`，237/237 通过。本次仅修改菜单 JSON 与说明，未执行完整 lint/typecheck/build。本地后端菜单同步及角色/应用授权刷新尚未执行，需重新登录后核对 `/authorize/me` 的两项查询权限并重试模板读取接口；静态检查与回归通过不代表在线权限已生效。
 - POST /message/preprocessor/device-alarm/_query：规则搜索，保留产品/设备/属性字段。
 - POST /alarm/record/device/_query：固定 alarmConfigSource=device-property-preprocessor，可选 alarmConfigId，服务端分页。
 - POST /alarm/record/device/_aggregation：仅当前页规则ID、warning状态，按alarmConfigId分组COUNT。
