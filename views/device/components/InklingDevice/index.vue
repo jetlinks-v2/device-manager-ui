@@ -111,13 +111,15 @@
     </div>
 </template>
 
-<script setup lang="ts" name="InklingDevice">
+<script setup lang="ts">
 import {
     getCommandsByAccess,
     getCommandsDevicesByAccessId,
 } from '../../../../api/link/accessConfig';
 import { cloneDeep, isArray } from 'lodash-es';
 import { getInkingDevices } from '../../../../api/instance';
+
+defineOptions({ name: 'InklingDevice' })
 
 type Emit = {
     (e: 'update:value', data: string | string[]): void;

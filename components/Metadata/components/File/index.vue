@@ -22,10 +22,12 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataFile">
+<script setup>
 import Type from './Type.vue'
 import {PopoverModal} from '../index'
 import {Form} from "ant-design-vue";
+
+defineOptions({ name: 'MetadataFile' })
 
 const emit = defineEmits(['update:value', 'confirm', 'cancel']);
 const props = defineProps({

@@ -81,13 +81,15 @@
   </div>
 </template>
 
-<script setup lang="ts" name="Parsing">
+<script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 import { ReloadOutlined, SaveOutlined } from '@ant-design/icons-vue';
 import { useInstanceStore } from '../../../../../store/instance';
 import ModbusMapping from './ModbusMapping.vue';
 import ScriptTransparentCodec from './ScriptTransparentCodec.vue';
 import { deviceCode, getTransparentCodecSupports } from '../../../../../api/instance';
+
+defineOptions({ name: 'Parsing' })
 
 const instanceStore = useInstanceStore();
 const { t } = useI18n();

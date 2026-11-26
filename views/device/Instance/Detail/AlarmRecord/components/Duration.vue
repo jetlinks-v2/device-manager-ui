@@ -2,7 +2,7 @@
     <div>{{ duration }}</div>
 </template>
 
-<script setup name="Duration">
+<script setup>
 const props = defineProps({
     data: {
         type: Object,
@@ -11,6 +11,8 @@ const props = defineProps({
 });
 const duration = ref();
 import dayjs from 'dayjs';
+
+defineOptions({ name: 'Duration' })
 const calculateDuration = (startTime, endTime) => {
     const diffInSeconds = endTime.diff(startTime, 'second');
     let result;

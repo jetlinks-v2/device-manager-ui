@@ -47,7 +47,7 @@
     </div>
 </template>
 
-<script setup lang="ts" name="ComprehensiveHome">
+<script setup lang="ts">
 import ProductChooseDialog from '../dialogs/ProductChooseDialog.vue';
 import DeviceChooseDialog from '../dialogs/DeviceChooseDialog.vue';
 import BootCardSmall from '../BootCardSmall.vue';
@@ -60,6 +60,8 @@ import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store';
 import { recommendList, bootConfig } from '../../typing';
 import { useI18n } from 'vue-i18n'
 import { home } from '../../../../assets'
+
+defineOptions({ name: 'ComprehensiveHome' })
 
 const { t: $t } = useI18n()
 const { jumpPage } = useMenuStore();

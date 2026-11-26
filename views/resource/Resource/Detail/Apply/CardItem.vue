@@ -33,7 +33,10 @@
     </div>
 </template>
 
-<script setup lang="ts" name="CardItem">
+<script setup lang="ts">
+
+defineOptions({ name: 'CardItem' })
+
 const props = defineProps({
     value: {
         type: Object,

@@ -34,9 +34,11 @@
   </div>
 </template>
 
-<script setup name="MetadataBaseTableHeader">
+<script setup>
 import { SearchModal, Sort } from './components/Search'
 import {useTableTool} from "./context";
+
+defineOptions({ name: 'MetadataBaseTableHeader' })
 
 const props = defineProps({
   columns: {

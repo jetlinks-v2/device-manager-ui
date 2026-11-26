@@ -3,6 +3,8 @@ import { formatPropertyUnit, formatTriggerText, formatRelieveText, isNumberPrope
 import type { ParsedRule, RuleDraft, RulePart } from './codec'
 import { readSampling, validateSampling, type SamplingDraft } from './sampling'
 import { readValueRules } from './values/config'
+import { readCorrection,correctionSummary,correctionIsFormula } from './correction'
+import type { StructuredExpression } from '@jetlinks-web-core/components/Expression'
 import { formatPropertyValue } from './values/metadata'
 
 export type RuleSection = 'cleaning' | 'processing' | 'alarm' | 'sampling'
@@ -18,6 +20,7 @@ export interface RuleStepSummary {
 type RuleEffects = Omit<RuleDraft, 'alarm'> & { alarm: Pick<DeviceAlarmFormModel, 'name' | 'trigger' | 'limit' | 'value' | 'values' | 'autoRelieve' | 'relieveCondition'> & Partial<Pick<DeviceAlarmFormModel, 'level' | 'notification'>> }
 
 export interface RuleRowSummary {
+  formula?:{expression:StructuredExpression;property:ThingModelProperty}
   key: RulePart
   icon: string
   title: string
@@ -75,8 +78,9 @@ function summarizeEffectRows(effects: RuleEffects, property: ThingModelProperty,
   if (effects.stepEnabled) rows.push({ key: 'step', icon: 'LineChartOutlined', title: t('PropertyRules.part.step'), color: 'blue',
     sentence: t('PropertyRules.sentence.maxStep', { age: durationText(effects.baselineTtl), threshold: `${effects.maxStep ?? '—'}${cleaningDifferenceUnit}` }),
     notice: [cleaningHint, t('PropertyRules.stepHint'), effects.scaleEnabled ? '' : differenceHint, t('PropertyRules.statefulHint')].filter(Boolean).join(' ') })
-  if (effects.scaleEnabled) rows.push({ key: 'scale', icon: 'CalculatorOutlined', title: t('PropertyRules.part.scale'), color: 'purple',
-    sentence: `${t('PropertyRules.sentence.multiply')} ${effects.scale ?? '—'} + ${Number(effects.offset) < 0 ? `(${effects.offset})` : effects.offset ?? '0'}` })
+  if (effects.scaleEnabled) rows.push({ key: 'scale', icon: correctionIsFormula(effects) ? 'FunctionOutlined' : 'CalculatorOutlined', title: t(correctionIsFormula(effects) ? 'PropertyRules.correction.formula' : 'PropertyRules.part.scale'), color: 'purple',
+    ...(effects.correction ? {formula:{expression:effects.correction,property}} : {}),
+    sentence: effects.correction ? correctionSummary(effects,t('PropertyRules.correction.value'),id=>t('PropertyRules.correction.'+id)) : `${t('PropertyRules.sentence.multiply')} ${effects.scale ?? '—'} + ${Number(effects.offset) < 0 ? `(${effects.offset})` : effects.offset ?? '0'}` })
   if (effects.fallbackEnabled) rows.push({ key: 'fallback', icon: 'HistoryOutlined', title: t('PropertyRules.part.fallback'), color: 'purple',
     sentence: t(`PropertyRules.sentence.fallback${effects.fallbackMode === 'previous' ? 'Previous' : 'Fixed'}`, {
       trigger: [t('PropertyRules.fallback.null'), effects.fallbackEmpty && (property.valueType?.type ?? property.type ?? property.dataType) === 'string' ? t('PropertyRules.fallback.emptyShort') : '',
@@ -142,6 +146,7 @@ function effectsOf(rule: ParsedRule): RuleEffects {
     samplingEnabled: Boolean(sampling), ...readSampling(sampling),
     scaleEnabled: Boolean(scale), scale: scale?.configuration.scale ?? '1', fileEnabled: Boolean(file),
     ...readValueRules(rule.nodes),
+    ...readCorrection(scale?.configuration.expression,scale?.configuration.editorMode),
   }
 }
 
@@ -172,7 +177,7 @@ function summarizeEffects(effects: RuleEffects, property: ThingModelProperty, t:
     { key: 'cleaning', icon: 'ClearOutlined', title: t('PropertyRules.cleaning'),
       text: cleaning.join(' · ') || t('PropertyRules.off'), enabled: effects.valuesEnabled || effects.rangeEnabled || Boolean(effects.stepEnabled) },
     ...(effects.scaleEnabled || effects.fallbackEnabled ? [{ key: 'processing' as const, icon: 'CalculatorOutlined', title: t('PropertyRules.stage.processing'),
-      text: [effects.scaleEnabled ? `× ${effects.scale} + ${effects.offset ?? '0'}` : '', effects.fallbackEnabled ? t('PropertyRules.part.fallback') : ''].filter(Boolean).join(' · '), enabled: true }] : []),
+      text: [effects.scaleEnabled ? effects.correction ? correctionSummary(effects,t('PropertyRules.correction.value'),id=>t('PropertyRules.correction.'+id)) : `× ${effects.scale} + ${effects.offset ?? '0'}` : '', effects.fallbackEnabled ? t('PropertyRules.part.fallback') : ''].filter(Boolean).join(' · '), enabled: true }] : []),
     { key: 'alarm', icon: 'AlertOutlined', title: t('PropertyRules.alarm'), text: alarm, enabled: effects.alarmEnabled },
     { key: 'sampling', icon: 'FilterOutlined', title: t('PropertyRules.stage.sampling'), text: sampling, enabled: effects.samplingEnabled },
     ...(effects.fileEnabled ? [{ key: 'processing' as const, icon: 'FileOutlined', title: t('PropertyRules.stage.processing'), text: t('PropertyRules.part.file'), enabled: true }] : []),

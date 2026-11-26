@@ -148,7 +148,7 @@
     />
 </template>
 
-<script setup name="TaskDrawer">
+<script setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import { queryTaskPaginateNot, deleteTask } from '../../../../api/firmware';
@@ -157,6 +157,8 @@ import TaskDetail from './Detail/index.vue';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 import dayjs from 'dayjs'
+
+defineOptions({ name: 'TaskDrawer' })
 
 const { t: $t } = useI18n();
 

@@ -19,9 +19,11 @@
   </div>
 </template>
 
-<script setup name="VirtualScroll">
+<script setup>
 import {computed, nextTick, onMounted, reactive, ref} from "vue";
 import Item from './Item.vue'
+
+defineOptions({ name: 'VirtualScroll' })
 
 const props = defineProps({
   data: {

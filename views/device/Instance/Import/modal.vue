@@ -54,7 +54,7 @@
   </a-modal>
 </template>
 
-<script lang='ts' setup name='DeviceImport'>
+<script lang='ts' setup>
 import {provide} from 'vue'
 import Product from './product.vue'
 import { onlyMessage } from '@jetlinks-web/utils'
@@ -64,6 +64,8 @@ import { importDeviceByPlugin } from '../../../../api/instance'
 import { useInitialDeviceImportProduct } from './hooks/useInitialDeviceImportProduct'
 import { device } from '../../../../assets'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'DeviceImport' })
 
 const { t: $t } = useI18n();
 const emit = defineEmits(['cancel', 'save']);

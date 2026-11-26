@@ -27,7 +27,7 @@
       <a-checkbox :checked="draft.maxSilence != null" :aria-label="$t('PropertyRules.maxSilence')" @update:checked="draft.maxSilence = $event ? 60000 : null">{{ $t(draft.maxSilence == null ? 'PropertyRules.maxSilence' : 'PropertyRules.sentence.orInterval') }}</a-checkbox>
       <template v-if="draft.maxSilence != null"><a-input-number :value="draft.maxSilence / 1000" :min="0.001" size="small" :controls="false" :aria-label="$t('PropertyRules.maxSilence')" @update:value="draft.maxSilence = $event == null ? 0 : Number($event) * 1000" /><span>{{ $t('PropertyRules.timeUnit.s') }}</span><RuleNotice :message="$t('PropertyRules.maxSilenceHint')" /></template>
     </span>
-    <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.stage.sampling') })" @click="draft.samplingEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+    <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.stage.sampling') })" @click="draft.samplingEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
   </PropertyRuleLine>
 </template>
 <script setup lang="ts">

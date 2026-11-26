@@ -25,11 +25,13 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataDouble">
+<script setup>
 import { UnitSelect, PopoverModal } from '../index'
 import ScaleItem from './ScaleItem.vue'
 import {Form} from "ant-design-vue";
 import {useI18n} from "vue-i18n";
+
+defineOptions({ name: 'MetadataDouble' })
 
 const emit = defineEmits(['update:value', 'cancel', 'confirm']);
 

@@ -20,10 +20,12 @@
   </a-form-item>
 </template>
 
-<script setup lang="ts" name="ReadType">
+<script setup lang="ts">
 
 import type {PropType} from "vue";
 import {useTableWrapper} from "../context";
+
+defineOptions({ name: 'ReadType' })
 
 type Emit = {
   (e: 'update:value', data: Array<string>): void

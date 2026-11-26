@@ -72,7 +72,7 @@
     </a-modal>
 </template>
 
-<script setup name="MetadataImport">
+<script setup>
 import {TOKEN_KEY_URL} from '@jetlinks-web/constants';
 import {getToken, onlyMessage, downloadFileByUrl} from '@jetlinks-web/utils';
 import {validate} from './util'
@@ -83,6 +83,8 @@ import {useGroupActive, useTableWrapper} from "../../../../../../../components/M
 import { useProductStore } from '../../../../../../../store/product';
 import { useInstanceStore } from '@device-manager-ui/store/instance';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataImport' })
 
 const { t: $t } = useI18n();
 

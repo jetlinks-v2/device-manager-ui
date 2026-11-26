@@ -49,7 +49,7 @@
   </div>
 </template>
 
-<script setup name="MetadataBaseTable">
+<script setup>
 import {
   FULL_SCREEN,
   RIGHT_MENU,
@@ -75,6 +75,8 @@ import {bodyProps} from "./props";
 import {findIndex, get, sortBy} from 'lodash-es'
 import i18n from '@jetlinks-web-core/locales'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataBaseTable' })
 
 const { t: $t } = useI18n();
 

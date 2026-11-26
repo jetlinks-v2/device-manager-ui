@@ -249,7 +249,7 @@
     </div>
 </template>
 
-<script setup lang="ts" name="product">
+<script setup lang="ts">
 import type { ConditionTerm } from '@jetlinks-web-core/components/ConditionFilter'
 
 import { createReusableTemplate } from '@vueuse/core'
@@ -270,6 +270,8 @@ import { intersection } from 'lodash-es';
 import { useDepartmentStore } from '@jetlinks-web-core/store/department';
 import deviceProductImg from "@device-manager-ui/assets/device-product.png";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'product' })
 
 const { t: $t } = useI18n();
 const permission = 'system/Department';

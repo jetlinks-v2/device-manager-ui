@@ -10,10 +10,12 @@
   />
 </template>
 
-<script setup name="MetadataGroup">
+<script setup>
 
 import {METADATA_GROUP_OPTIONS} from "../../consts";
 import {useTableWrapper} from "../../context";
+
+defineOptions({ name: 'MetadataGroup' })
 
 const props = defineProps({
   value: {

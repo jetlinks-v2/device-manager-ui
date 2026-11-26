@@ -91,7 +91,7 @@
   </j-page-container>
 </template>
 
-<script setup lang="ts" name="Relationship">
+<script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 
 import {
@@ -103,6 +103,8 @@ import { onlyMessage } from "@jetlinks-web-core/utils/comm";
 import { useI18n } from "vue-i18n";
 import { useRelationTypes } from "./hooks/useRelationTypes";
 import type { ConditionFilterChangePayload } from "@jetlinks-web-core/components/ConditionFilter";
+
+defineOptions({ name: 'Relationship' })
 
 const { relationTypes, beRelationTypes } = useRelationTypes();
 

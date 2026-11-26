@@ -390,7 +390,7 @@
 <!--        />-->
 </template>
 
-<script setup name="Child">
+<script setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import { stateMap, columns, statusMap } from './data';
@@ -414,6 +414,8 @@ import { Modal } from 'ant-design-vue';
 import { EventEmitter } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import { ref as emptyCreateSearchRef } from 'vue'
+
+defineOptions({ name: 'Child' })
 const emptyCreateSearch = emptyCreateSearchRef(false)
 
 

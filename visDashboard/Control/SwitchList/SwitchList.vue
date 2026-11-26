@@ -37,12 +37,14 @@
   </div>
 </template>
 
-<script setup lang="ts" name="SwitchList">
+<script setup lang="ts">
 import {moduleRegistry} from "@jetlinks-web-core/utils/module-registry";
 
 import { useDashboardData } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
 import { useGridLayout } from '@jetlinks-web-core/components/DashBoardCanvas/runtime'
 import { useControl } from '@device-manager-ui/visDashboard/hooks/useControl'
+
+defineOptions({ name: 'SwitchList' })
 
 const props = defineProps({
   info: {

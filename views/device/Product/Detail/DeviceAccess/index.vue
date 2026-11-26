@@ -206,13 +206,15 @@
   />
 </template>
 
-<script lang="ts" setup name="AccessConfig">
+<script lang="ts" setup>
 import Title from "../Title/index.vue";
 import AccessModal from "./accessModal.vue";
 import MetaDataModal from "./metadataModal.vue";
 import ProductAccessFields from "./ProductAccessFields.vue";
 import { getI18nText } from '../../../../../utils/i18n';
 import { useProductDeviceAccess } from './hooks/useProductDeviceAccess';
+
+defineOptions({ name: 'AccessConfig' })
 
 const {
   productStore, permissionStore, formRef, visible, access, accessId, metadata, dataSource,

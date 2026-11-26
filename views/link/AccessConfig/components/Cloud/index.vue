@@ -15,9 +15,11 @@
     </div>
 </template>
 
-<script lang="ts" setup name="AccessCloud">
+<script lang="ts" setup>
 import Ctwing from './Ctwing.vue';
 import OneNet from './OneNet.vue';
+
+defineOptions({ name: 'AccessCloud' })
 
 const props = defineProps({
     provider: {

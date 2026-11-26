@@ -94,7 +94,7 @@
         />
     </j-page-container>
 </template>
-<script lang="ts" setup name="FirmwarePage">
+<script lang="ts" setup>
 import { query, queryProduct, remove } from '../../../api/firmware';
 import TaskDrawer from './Task/index.vue';
 import dayjs from 'dayjs';
@@ -106,6 +106,8 @@ import type { FirmwareProductOption, FormDataType } from './type';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useI18n } from 'vue-i18n';
 import { getI18nText } from '../../../utils/i18n';
+
+defineOptions({ name: 'FirmwarePage' })
 
 const { t: $t } = useI18n();
 

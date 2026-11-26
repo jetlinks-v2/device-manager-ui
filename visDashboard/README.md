@@ -2,6 +2,12 @@
 
 `DeviceManagement/DeviceMapCard` 是设备地图的画布组件，保留 `deviceMapCard` 类型与现有配置。遵循 `runtime-ui/AGENTS.md`：展示组件只消费 props/emits，状态和生命周期放 hooks，连接与数据转换放 services；单个 Vue 文件不超过 300 行。文案统一维护于本模块 `locales/lang/{zh,en}.json`。
 
+## 点位摘要与详情跳转
+
+沿用资源中心现有地图和最近离线列表，点击单点展示指向该点的紧凑摘要卡，展示名称、状态、可复制设备 ID、所属产品、最近活跃时间和坐标，底部“查看设备详情”进入已授权的现有设备详情。普通聚合点继续放大，同坐标或最高层级设备继续先选列表；不在浮卡增加编辑、启停和遥测操作。
+
+实施范围为运行时设备模块：`DeviceMapSelectionCard.vue` 承载纯展示，`useDeviceMapSelection.ts` 复用详情及状态服务并负责导航，`useDeviceMap.ts` 组合聚合事件，地图视角与浮窗适配由独立 hook 维护。高德浮窗复用已安装的 Vue-AMap 信息窗体与地图容器，基础控件沿用 Ant Design 与共享 Ellipsis；靠边时由地图自动避让，低高度下卡片正文滚动。浏览器从详情返回时恢复当前账号、项目与地图实例范围的视角，仅对重新查询后仍可见的设备恢复摘要，同坐标设备仍可返回列表切换。
+
 ## 请求凭证
 
 `DeviceManagement/services/deviceMap.ts` 与模块内 `views/device/DashBoard/components/Amap.vue` 的 GeoJSON SSE 请求统一通过 `@jetlinks-web/utils` 的 `getToken()` 获取凭证。项目环境按当前项目读取 `project_<项目编码>.token`，独立部署读取全局 Token，避免直接读取 `LocalStore.get(TOKEN_KEY)` 导致项目凭证为空或误用残留的全局凭证。范围仅限这两处读取及现有测试 mock；接口、查询参数、项目会话结构和地图交互沿用现有行为。
@@ -24,7 +30,9 @@
 
 ## 聚合卡片
 
-SaaS 资源中心通过 `deviceMapCard.presentation=distribution` 使用简化分布图，其他入口沿用高德聚合地图。分布图复用 core ECharts，静态陆地轮廓来自资源中心原型，不含示例设备或国界；每台设备使用授权 GeoJSON 的真实位置，状态复用设备状态接口，每批最多 100 台。在线绿色、离线红色、禁用和未知灰色，后两类仅存在时追加图例；状态失败保留位置和错误提示，空定位显示明确空态。同坐标点击仍复用原设备选择和详情卡，项目范围变化、编辑态、停用及卸载会取消旧请求。此模式不依赖高德 Key，不更改其他地图配置。
+嵌入地图可通过 `deviceMapCard.legendTarget` 指定已挂载的宿主标题栏容器选择器，使用原生 Teleport 展示同一份动态图例；不指定时沿用地图内右上角位置。该字段由宿主运行时克隆配置提供，不改写持久化布局或增加状态请求。
+
+资源中心沿用默认高德聚合地图；显式配置 `deviceMapCard.presentation=distribution` 的其他消费者仍可使用简化分布图。分布图复用 core ECharts，静态陆地轮廓来自资源中心原型，不含示例设备或国界；每台设备使用授权 GeoJSON 的真实位置，状态复用设备状态接口，每批最多 100 台。在线绿色、离线红色、禁用和未知灰色，后两类仅存在时追加图例；状态失败保留位置和错误提示，空定位显示明确空态。同坐标点击仍复用原设备选择和详情卡，项目范围变化、编辑态、停用及卸载会取消旧请求。此模式不依赖高德 Key，不更改其他地图配置。
 
 - 行为：点击普通聚合点继续放大；同坐标或达到地图最高层级（20）仍聚合时展示设备卡片，单设备点打开详情。聚合在最高层级保持启用，避免重叠设备被拆成无法点击的单点。底部文案为 `{count}台设备位置太近，无法继续展开`，不根据坐标推断房间。
 - 交互：卡片支持名称/ID 搜索、分页、关闭、设备详情、失败重试和语言切换。长列表在卡片内滚动，底部提示保持可见；编辑态停止请求，关闭/卸载取消状态和详情请求。自动刷新位置时关闭旧卡片，避免继续操作已失效的位置快照。
@@ -35,7 +43,8 @@ SaaS 资源中心通过 `deviceMapCard.presentation=distribution` 使用简化�
 
 - `DeviceManagement/DeviceMapCard/DeviceMapCard.vue`：原画布组件，类型/注册入口不变。
 - `DeviceManagement/DeviceMapCard/DeviceMapSelectionCard.vue`：仅消费 props/emits 的 Ant Design 展示卡片。
-- `DeviceManagement/hooks/useDeviceMap.ts`、`useDeviceMapSelection.ts`：位置流、聚合选择、分页、竞态取消与生命周期。
+- `DeviceManagement/hooks/useDeviceMap.ts`、`useDeviceMapSelection.ts`：位置流、聚合选择、分页、摘要与授权详情导航、竞态取消与生命周期。
+- `DeviceManagement/hooks/useDeviceMapViewport.ts`：原生信息窗的尺寸与方向、详情返回时的视角和可见点位恢复。
 - `DeviceManagement/DeviceMapCard/{cluster,markers}.ts`：聚合终点规则和安全的 DOM 标记渲染；设备名称通过 `textContent` 写入。
 - `DeviceManagement/services/deviceMap.ts`：GeoJSON 身份与坐标归一化；状态和详情复用 `dataCapabilities/deviceInstanceMonitoring.service.ts`。
 

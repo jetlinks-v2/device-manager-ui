@@ -13,7 +13,7 @@
     </div>
 </template>
 
-<script setup name="DashBoardMap">
+<script setup>
 import {ElAmapMarkerCluster} from "@vuemap/vue-amap";
 import { getCenterPoint } from "../../../../utils/map";
 import { EventSourcePolyfill } from 'event-source-polyfill';
@@ -22,6 +22,8 @@ import { getToken } from "@jetlinks-web/utils";
 import markerPng from '@device-manager-ui/assets/marker.png'
 import { debounce } from 'lodash-es'
 import {getBaseApi} from "@jetlinks-web-core/utils";
+
+defineOptions({ name: 'DashBoardMap' })
 
 const deviceList = ref([])
 const _pageSize = 5000

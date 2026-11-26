@@ -286,7 +286,7 @@
     </j-permission-button>
 </template>
 
-<script setup lang="ts" name="OtherSetting">
+<script setup lang="ts">
 import Metrics from './Metrics/Metrics.vue';
 import { watch } from 'vue';
 import { useProductStore } from '../../../../../../../store/product';
@@ -302,6 +302,8 @@ import { useThreshold } from './hooks';
 import { useSystemStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
 import {isNoCommunity} from "@jetlinks-web-core/utils";
+
+defineOptions({ name: 'OtherSetting' })
 
 const { t: $t } = useI18n();
 

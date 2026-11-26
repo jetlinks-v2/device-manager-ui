@@ -136,6 +136,7 @@
 
 .event-history__row {
   display: grid;
+  width: 100%;
   gap: var(--space-3);
   align-items: start;
   min-height: 3.75rem;
@@ -172,6 +173,24 @@
 
 .event-history__empty {
   margin: var(--space-4) 0;
+}
+
+.event-history__action {
+  position: sticky;
+  right: calc(-1 * var(--space-4));
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  background: var(--jet-theme-bg-container);
+}
+
+.event-history__action :deep(.ant-btn) {
+  color: var(--jet-theme-primary);
+}
+
+.event-history__row--head .event-history__action {
+  background: var(--jet-theme-bg-layout);
 }
 
 @media (max-width: 53.75rem) {

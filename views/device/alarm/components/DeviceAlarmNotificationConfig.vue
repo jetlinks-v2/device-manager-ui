@@ -26,10 +26,13 @@
                     <div v-for="option in notification.channelOptions" :key="option.value" class="notification-type">
                       <a-checkbox :value="option.value"><RuleMenuOption compact :icon="option.icon" :title="option.label" :description="option.description" /></a-checkbox>
                       <DeviceAlarmTemplateStatus :templates="option.templates" :include-relieve="Boolean(model.autoRelieve && model.notification.includeRelieve)" />
+                      <a-button v-if="canConfigure && option.value !== 'inside-mail'" size="small" type="link" @click="openConfiguration('alarm-device', option.value)">{{ $t('DeviceAlarm.notification.configureTemplate') }}</a-button>
+                      <a-button v-if="canConfigure && option.value !== 'inside-mail' && model.autoRelieve && model.notification.includeRelieve && model.notification.relieveTopicProvider !== 'alarm-device'" size="small" type="link" @click="openConfiguration('alarm-device-relieve', option.value)">{{ $t('DeviceAlarm.notification.configureRelieveTemplate') }}</a-button>
                     </div>
                   </a-checkbox-group>
                   <span v-if="!loading && !failed && !notification.channelOptions.length" class="notification-types-empty">{{ $t('DeviceAlarm.notification.noTypes') }}</span>
                 </a-spin>
+                <a-button v-if="canConfigure" type="link" @click="openConfiguration('alarm-device')">{{ $t('DeviceAlarm.notification.configureTemplate') }}</a-button>
                 <div v-if="notification.channelOptions.length" class="notification-option-help">
                   <p v-if="notification.hasContactType">{{ $t('DeviceAlarm.delivery.contactSettings') }}</p>
                   <p>{{ $t('DeviceAlarm.delivery.templateOverride') }}</p>
@@ -67,6 +70,7 @@ import DeviceAlarmTemplateStatus from './DeviceAlarmTemplateStatus.vue'
 import DeviceAlarmNotificationHelp from './editor/DeviceAlarmNotificationHelp.vue'
 import DeviceAlarmSelectionSummary from './DeviceAlarmSelectionSummary.vue'
 import RuleMenuOption from '../../components/PropertyRules/RuleMenuOption.vue'
+import { useNotificationConfigNavigation } from '@jetlinks-web-core/hooks/useNotificationConfigNavigation'
 import { useAlarmNotification } from '../hooks/useAlarmNotification'
 import type { DeviceAlarmFormModel, DeviceAlarmNotifyMethod } from '../types'
 
@@ -83,6 +87,7 @@ const props = defineProps({
 const emit = defineEmits<{ (e: 'request-methods'): void; (e: 'retry-methods'): void; (e: 'open-change', value: boolean): void }>()
 const { t: $t } = useI18n()
 const notification = reactive(useAlarmNotification(props, () => emit('request-methods'), value => emit('open-change', value)))
+const { available: canConfigure, open: openConfiguration } = useNotificationConfigNavigation(() => emit('retry-methods'))
 const channelTrigger = ref<{ focus: () => void }>()
 function closeChannels() {
   notification.setPanel('channels', false)

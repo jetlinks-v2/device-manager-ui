@@ -68,10 +68,12 @@
   </j-drag-modal>
 </template>
 
-<script setup name="MetadataTableSearch">
+<script setup>
 import Table from '../../Table.vue'
 import {useTableDataSource, useTableOpenGroup, useTableTool, useGroupOptions} from "../../context";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataTableSearch' })
 
 const { t: $t } = useI18n();
 

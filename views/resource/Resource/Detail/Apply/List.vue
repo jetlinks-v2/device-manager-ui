@@ -74,10 +74,12 @@
     </div>
 </template>
 
-<script setup lang="ts" name="List">
+<script setup lang="ts">
 import CardItem from './CardItem.vue';
 import Product from './Product.vue';
 import { device } from '@device-manager-ui/assets/device'
+
+defineOptions({ name: 'List' })
 
 const props = defineProps({
     productList: {

@@ -93,13 +93,15 @@
   </div>
 </template>
 
-<script setup name="MetadataBaseTableGroup">
+<script setup>
 import {Modal} from "ant-design-vue";
 import {randomNumber} from "@jetlinks-web/utils";
 import {isFullScreen} from "@jetlinks-web-core/utils";
 import {useTableGroupError, useTableWrapper} from './context'
 import { useI18n } from 'vue-i18n';
 import {cloneDeep} from "lodash-es";
+
+defineOptions({ name: 'MetadataBaseTableGroup' })
 
 const { t: $t } = useI18n();
 const props = defineProps({

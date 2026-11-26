@@ -32,9 +32,11 @@
   </a-popover>
 </template>
 
-<script setup name="MetadataPopover">
+<script setup>
 import { useMask } from '../utils'
 import {useTableWrapper, useTableFullScreen} from "../../context";
+
+defineOptions({ name: 'MetadataPopover' })
 
 const props = defineProps({
   placement: {

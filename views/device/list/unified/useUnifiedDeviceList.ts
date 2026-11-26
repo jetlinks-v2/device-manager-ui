@@ -113,7 +113,7 @@ export function useUnifiedDeviceList() {
       if (version !== requestVersion) return
       let data = result.data.map(device => ({ ...device, category: '' } as UnifiedDevice))
       data.forEach(device => { device.category = classify(device) })
-      // 时间列只在全部分类显示，按当前页 ID 批量补齐真实上报时间，关闭无关告警聚合。
+      // 时间列只在全部分类显示，按当前页 ID 批量补齐运行态时间，关闭无关告警聚合。
       const selectedProvider = activeProvider.value
       // 补齐字段只服务当前分类；“全部设备”不能因未打开的视频或网关扩展发起额外查询。
       const enrichment = selectedProvider?.enrich
@@ -129,7 +129,15 @@ export function useUnifiedDeviceList() {
       ])
       const extras = new Map(enriched.map(device => [device.id, device]))
       const reportTimes = new Map(runtime?.data.map(device => [device.id, device.lastReportTime]))
-      data = data.map(device => ({ ...(extras.get(device.id) || device), lastReportTime: reportTimes.get(device.id) }))
+      data = data.map(device => {
+        const current = extras.get(device.id) || device
+        const runtimeTime = reportTimes.get(device.id)
+        // 离线、禁用时与详情头部保持一致，取最近上下线时间；在线仍沿用运行态接口。
+        const lastReportTime = current.connectionStatus === 'offline' || current.connectionStatus === 'disabled'
+          ? Math.max(current.onlineAt || 0, current.offlineAt || 0) || runtimeTime
+          : runtimeTime
+        return { ...current, lastReportTime }
+      })
       if (version !== requestVersion) return
       rememberProductLabels(data)
       rows.value = data; total.value = result.total

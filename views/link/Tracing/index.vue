@@ -127,7 +127,7 @@
   </main>
 </template>
 
-<script setup lang="ts" name="ClusterTracingPage">
+<script setup lang="ts">
 import { computed, nextTick, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CloseOutlined, DownOutlined, QuestionCircleOutlined, ReloadOutlined } from '@ant-design/icons-vue'
@@ -136,6 +136,8 @@ import { traceEntryName, traceTabLabel, traceTabId } from './useTraceWorkspace'
 import { traceRecentDuration, traceStateKey } from './traceRecentPresentation'
 import TraceTabPanel from './TraceTabPanel.vue'
 import TraceInputHelp from './TraceInputHelp.vue'
+
+defineOptions({ name: 'ClusterTracingPage' })
 
 const props = defineProps({ active: { type: Boolean, default: true } })
 const { t, locale } = useI18n()

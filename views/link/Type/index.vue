@@ -213,7 +213,7 @@
     </div>
   </j-page-container>
 </template>
-<script lang="ts" setup name="TypePage">
+<script lang="ts" setup>
 import { createReusableTemplate } from '@vueuse/core'
 
 import {supports, query, remove, start, shutdown} from '../../../api/link/type';
@@ -224,6 +224,8 @@ import {useI18n} from 'vue-i18n';
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils';
 import { getI18nText } from '../../../utils/i18n'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
+
+defineOptions({ name: 'TypePage' })
 
 const {t: $t} = useI18n();
 const menuStory = useMenuStore();

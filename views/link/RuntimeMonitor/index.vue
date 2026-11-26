@@ -32,7 +32,7 @@
     </div>
   </main>
 </template>
-<script setup lang="ts" name="RuntimeMonitorPage">
+<script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -46,6 +46,8 @@ import { provideClusterBuffers } from './useClusterBuffers'
 import { useClusterSessionContext } from './useClusterSessions'
 import { bufferIntervals, diagnosticIntervalSeconds, type BufferInterval } from '../diagnostics/preferences'
 import { provideResourceHistoryCache } from '../diagnostics/overview/useResourceHistory'
+
+defineOptions({ name: 'RuntimeMonitorPage' })
 const RuntimeNodeWorkspace = defineAsyncComponent(() => import('./RuntimeNodeWorkspace.vue'))
 const { t } = useI18n(); const route = useRoute(), router = useRouter()
 const view = useClusterWorkspace()

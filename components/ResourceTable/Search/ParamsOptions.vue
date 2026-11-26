@@ -1,5 +1,7 @@
-<script setup name="ParamsOptions">
+<script setup>
 import {useI18n} from 'vue-i18n'
+
+defineOptions({ name: 'ParamsOptions' })
 
 const {t: $t} = useI18n()
 const props = defineProps({

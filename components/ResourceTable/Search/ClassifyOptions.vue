@@ -1,6 +1,8 @@
-<script setup name='ClassifyOptions'>
+<script setup>
 import { brandClassifyId } from '@device-manager-ui/components/ResourceTable/Search/data'
 import { omit } from 'lodash-es'
+
+defineOptions({ name: 'ClassifyOptions' })
 
 const props = defineProps({
   options: {

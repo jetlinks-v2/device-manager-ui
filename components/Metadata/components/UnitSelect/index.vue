@@ -14,10 +14,12 @@
   />
 </template>
 
-<script setup name="MetadataUnitSelect">
+<script setup>
 import { Form, Select } from 'ant-design-vue'
 import {useTableWrapper} from "../../context";
 import {useGetUnit} from "../../../../views/device/components/Metadata/Base/columns";
+
+defineOptions({ name: 'MetadataUnitSelect' })
 
 const props = defineProps({
   value: {

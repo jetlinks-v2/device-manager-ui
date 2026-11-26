@@ -91,12 +91,14 @@
   </div>
 </template>
 
-<script setup lang='ts' name='FormBuilder'>
+<script setup lang='ts'>
 import type { Options, OptionsItem, OptionsComponent } from './index.modules'
 import { PropType } from 'vue'
 import { get, isArray, isString, pick, set } from 'lodash-es'
 import { formProps } from 'ant-design-vue/es/form'
 import componentType from './util'
+
+defineOptions({ name: 'FormBuilder' })
 
 const form = ref()
 

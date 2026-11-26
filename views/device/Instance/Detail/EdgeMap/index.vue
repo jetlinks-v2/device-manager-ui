@@ -178,7 +178,7 @@
     </a-card>
 </template>
 
-<script lang="ts" setup name="EdgeMap">
+<script lang="ts" setup>
 import { useInstanceStore } from '../../../../../store/instance';
 import {
     getEdgeMap,
@@ -191,6 +191,8 @@ import PatchMapping from './PatchMapping.vue';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { cloneDeep } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'EdgeMap' })
 
 const { t: $t } = useI18n();
 

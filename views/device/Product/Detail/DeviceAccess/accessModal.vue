@@ -145,12 +145,14 @@
   </a-modal>
 </template>
 
-<script setup lang="ts" name="accessModal">
+<script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 import type { PropType } from 'vue'
 import { device } from '../../../../../assets'
 import type { AccessSelection } from './accessState'
 import { useProductAccessSelector } from './hooks/useProductAccessSelector'
+
+defineOptions({ name: 'accessModal' })
 
 const props = defineProps({
   productId: { type: String, default: undefined },

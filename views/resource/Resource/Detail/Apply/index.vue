@@ -56,7 +56,7 @@
     </a-modal>
 </template>
 
-<script setup lang="ts" name="Apply">
+<script setup lang="ts">
 import { onlyMessage } from '@jetlinks-web/utils';
 import List from './List.vue';
 import ProtocolList from './ProtocolList.vue';
@@ -70,6 +70,8 @@ import {
 } from '@device-manager-ui/api/resource/resource';
 import { useMenuStore, useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Apply' })
 
 const { t: $t } = useI18n();
 const permission = useAuthStore().hasPermission(`device/Product:add`);

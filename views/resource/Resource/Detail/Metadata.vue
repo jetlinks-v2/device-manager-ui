@@ -1,7 +1,9 @@
-<script setup name="Metadata">
+<script setup>
 import { DataTypeList, EventLevel, sourceType,arrayToObj } from './utils'
 import VirtualScroll from '@device-manager-ui/components/VirtualScroll/index.vue'
 import { useI18n } from 'vue-i18n'
+
+defineOptions({ name: 'Metadata' })
 
 const { t: $t } = useI18n()
 const props = defineProps({

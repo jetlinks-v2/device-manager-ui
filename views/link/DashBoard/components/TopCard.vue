@@ -46,12 +46,14 @@
     </div>
 </template>
 
-<script lang="ts" setup name="TopCard">
+<script lang="ts" setup>
 import { serverNode } from '../../../../api/link/dashboard';
 import TopEchartsItemNode from './TopEchartsItemNode.vue';
 import { wsClient } from '@jetlinks-web/core';
 import { map } from 'rxjs/operators';
 import { isNoCommunity } from '@jetlinks-web-core/utils/utils'
+
+defineOptions({ name: 'TopCard' })
 
 const serverId = ref();
 const serverNodeOptions = ref<Array<any>>([]);

@@ -22,12 +22,14 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataBoolean">
+<script setup>
 import { PopoverModal } from '../index'
 import Item from './Item.vue'
 import {Form} from "ant-design-vue";
 import {BooleanValueMap} from "../utils";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataBoolean' })
 
 const { t: $t } = useI18n();
 

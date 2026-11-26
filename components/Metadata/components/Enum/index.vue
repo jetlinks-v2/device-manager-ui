@@ -22,11 +22,13 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataEnum">
+<script setup>
 import { PopoverModal } from '../index'
 import { cloneDeep } from 'lodash-es'
 import Item from './Item.vue'
 import {Form} from "ant-design-vue";
+
+defineOptions({ name: 'MetadataEnum' })
 
 const emit = defineEmits(['update:value', 'confirm', 'cancel']);
 

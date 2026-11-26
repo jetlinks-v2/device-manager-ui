@@ -1,0 +1,75 @@
+.device-map-selection {
+  position: absolute;
+  z-index: var(--z-modal);
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 20rem;
+  max-width: calc(100% - 1.5rem);
+  max-height: calc(100% - 1.5rem);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  color: var(--ant-color-text, var(--ink-1));
+  background: var(--ant-color-bg-container, var(--bg));
+  border: 1px solid var(--ant-color-border-secondary, var(--line));
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-pop);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.device-map-selection--floating {
+  position: relative;
+  top: auto;
+  right: auto;
+  max-width: none;
+}
+
+/* 原生信息窗以点位为锚点；尾巴与浮卡方向一致，不受正文滚动裁剪。 */
+.device-map-selection--floating::after {
+  content: '';
+  position: absolute;
+  bottom: -0.375rem;
+  left: 50%;
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--ant-color-bg-container, var(--bg));
+  border-right: 1px solid var(--ant-color-border-secondary, var(--line));
+  border-bottom: 1px solid var(--ant-color-border-secondary, var(--line));
+  transform: translateX(-50%) rotate(45deg);
+  pointer-events: none;
+}
+.device-map-selection--below::after {
+  top: -0.375rem;
+  bottom: auto;
+  transform: translateX(-50%) rotate(225deg);
+}
+
+.device-map-selection > :deep(.ant-spin-nested-loading) { flex: 1; min-height: 0; overflow: auto; }
+.device-map-selection > :not(.ant-spin-nested-loading) { flex-shrink: 0; }
+.device-map-selection__header { display: flex; align-items: flex-start; gap: 0.5rem; padding: 1rem 1rem 0.75rem; }
+.device-map-selection__heading { flex: 1; min-width: 0; }
+.device-map-selection__name { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.25rem; }
+.device-map-selection__name strong { min-width: 0; overflow-wrap: anywhere; font-size: var(--fs-title-4); }
+.device-map-selection__icon { flex: none; padding-top: 0.1875rem; color: var(--ant-primary-color, var(--accent)); }
+.device-map-selection__close { flex: none; }
+.device-map-selection__body { padding: 0 1rem 0.75rem; }
+.device-map-selection__details { overflow-wrap: anywhere; }
+.device-map-selection__details :deep(.ant-descriptions-row > td) { padding-bottom: 0.375rem; }
+.device-map-selection__details :deep(.ant-descriptions-item-label) { color: var(--ant-color-text-secondary, var(--ink-2)); font-size: inherit; }
+.device-map-selection__details :deep(.ant-typography) { font-size: inherit; word-break: break-all; }
+.device-map-selection__coordinate { display: flex; align-items: center; gap: 0.375rem; padding-top: 0.5rem; color: var(--ant-color-text-secondary, var(--ink-2)); font-size: var(--fs-caption); }
+.device-map-selection__actions { padding: 0.75rem 1rem 1rem; border-top: 1px solid var(--ant-color-border-secondary, var(--line)); }
+.device-map-selection__actions :deep(.ant-btn) { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+.device-map-selection__search { display: flex; width: calc(100% - 2rem); margin: 0 1rem 0.75rem; }
+.device-map-selection__list { margin: 0; padding: 0; list-style: none; }
+.device-map-selection__device { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.75rem 1rem; border: 0; border-bottom: 1px solid var(--ant-color-border-secondary, var(--line)); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.device-map-selection__device:hover, .device-map-selection__device:focus-visible { background: var(--bg-hover); }
+.device-map-selection__identity { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.device-map-selection__identity strong, .device-map-selection__identity span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.device-map-selection__identity span { color: var(--ant-color-text-secondary, var(--ink-2)); font-size: var(--fs-caption); }
+.device-map-selection__device :deep(.ant-badge) { flex-shrink: 0; }
+.device-map-selection__message { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.75rem 1rem; color: var(--ant-color-error, var(--err)); }
+.device-map-selection__pagination { padding: 0.75rem 1rem; text-align: right; }
+.device-map-selection__footer { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.75rem 1rem; color: var(--ant-color-text-secondary, var(--ink-2)); background: var(--bg-hover); border-radius: 0 0 var(--r-3) var(--r-3); font-size: var(--fs-caption); }
+.device-map-selection__footer > :first-child { margin-top: 0.1875rem; }

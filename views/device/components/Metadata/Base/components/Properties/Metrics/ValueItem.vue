@@ -36,7 +36,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="MetricValueItems">
+<script setup lang="ts">
 import { reactive } from 'vue';
 import type { PropType } from 'vue';
 import Item from './item.vue'
@@ -44,6 +44,8 @@ import {Form} from "ant-design-vue";
 import { cloneDeep } from "lodash-es";
 import { PopoverModal } from '../../../../../../../../components/Metadata';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetricValueItems' })
 
 const { t: $t } = useI18n();
 

@@ -73,7 +73,7 @@ test('map slot distinguishes recycled credentials from other failures and normal
 test('clicking the real local action emits configure to the card handler', async () => {
   const calls = [], { component, map } = card({}, { calls })
   const make = type => ({ type, children: [], props: {} })
-  const renderer = createRenderer({ createElement: make, createText: text => ({ text }), createComment: text => ({ text }), setText: (n, t) => { n.text = t }, setElementText: (n, t) => { n.text = t }, patchProp: (n, k, _old, v) => { n.props[k] = v }, insert: (n, p) => { p.children.push(n) }, remove() {}, parentNode() {}, nextSibling() {} })
+  const renderer = createRenderer({ createElement: make, createText: text => ({ text }), createComment: text => ({ text }), setText: (n, t) => { n.text = t }, setElementText: (n, t) => { n.text = t }, patchProp: (n, k, _old, v) => { n.props[k] = v }, insert: (n, p, anchor) => { if (n.parent) n.parent.children.splice(n.parent.children.indexOf(n), 1); n.parent = p; const i = p.children.indexOf(anchor); p.children.splice(i < 0 ? p.children.length : i, 0, n) }, remove(n) { if (n.parent) n.parent.children.splice(n.parent.children.indexOf(n), 1) }, parentNode: n => n.parent, nextSibling: n => n.parent?.children[n.parent.children.indexOf(n) + 1] })
   const root = make('root'), app = renderer.createApp(component)
   install(app, map); app.mount(root); await nextTick()
   const find = n => n.type === 'button' ? n : (n.children || []).map(find).find(Boolean)

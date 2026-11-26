@@ -55,10 +55,12 @@
   </div>
 </template>
 
-<script lang="ts" name="CustomChartsCard" setup>
+<script lang="ts" setup>
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { cloneDeep } from 'lodash-es'
 import { useI18n } from 'vue-i18n'
+
+defineOptions({ name: 'CustomChartsCard' })
 
 const { t: $t } = useI18n()
 

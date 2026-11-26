@@ -42,10 +42,12 @@
   </a-modal>
 </template>
 
-<script setup name="Update">
+<script setup>
 import {checkUpdate, _latest, installResource, queryTaskListNoPaging} from '@device-manager-ui/api/resource/resource';
 import Install from '@device-manager-ui/views/resource/Resource/Install/index.vue'
 import {provide} from "vue";
+
+defineOptions({ name: 'Update' })
 
 const emits = defineEmits(['close', 'refresh']);
 

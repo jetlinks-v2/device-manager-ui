@@ -54,13 +54,15 @@
         </div>
     </div>
 </template>
-<script setup lang="ts" name="Editor">
+<script setup lang="ts">
 import { queryTypescript, queryProductTs } from '../../../api/instance';
 import { useInstanceStore } from '../../../store/instance';
 import { useProductStore } from '../../../store/product';
 import { cloneDeep } from 'lodash-es';
 import { inject } from 'vue';
 import * as monaco from 'monaco-editor'
+
+defineOptions({ name: 'Editor' })
 interface Props {
     mode?: 'advance' | 'simple';
     id?: string;

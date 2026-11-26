@@ -41,12 +41,14 @@
   </a-modal>
 </template>
 
-<script setup lang="ts" name="TagsModal">
+<script setup lang="ts">
 import {omit} from "lodash-es";
 import {watch} from "vue";
 import JsonView from './JsonView.vue'
 import {useStoreType} from "../utils";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'TagsModal' })
 
 const { t: $t } = useI18n();
 

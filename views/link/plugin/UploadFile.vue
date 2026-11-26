@@ -14,10 +14,12 @@
     />
 </template>
 
-<script setup lang="ts" name="PluginFileUpload">
+<script setup lang="ts">
 import { FileUpload as CoreFileUpload } from '@jetlinks-web-core/components';
 import { uploadPluginFile } from '../../../api/link/plugin';
 import { usePluginFileUpload } from './usePluginFileUpload';
+
+defineOptions({ name: 'PluginFileUpload' })
 
 const props = defineProps({
     modelValue: {

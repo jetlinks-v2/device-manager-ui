@@ -23,7 +23,7 @@
         </span>
       </template>
     </I18nT>
-    <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.fallback') })" @click="draft.fallbackEnabled = false"><AIcon type="CloseOutlined" /></a-button></template>
+    <template #action><a-button type="text" size="small" :aria-label="$t('PropertyRules.removePart', { name: $t('PropertyRules.part.fallback') })" @click="draft.fallbackEnabled = false"><AIcon type="DeleteOutlined" /></a-button></template>
   </PropertyRuleLine>
 </template>
 <script setup lang="ts">

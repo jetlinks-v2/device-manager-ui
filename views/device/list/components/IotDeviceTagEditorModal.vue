@@ -26,39 +26,7 @@
           <j-ellipsis>{{ getTagLabel(record) }}</j-ellipsis>
         </div>
         <template v-else>
-          <MetadataValueItem
-            v-if="['object', 'array'].includes(getTagType(record))"
-            v-model="record.value"
-            :item="record"
-          />
-          <SelectAMap
-            v-else-if="getTagType(record) === 'geoPoint'"
-            v-model:point="record.value"
-          />
-          <a-time-picker
-            v-else-if="isTimeOnlyTag(record)"
-            v-model:value="record.value"
-            format="HH:mm:ss"
-            value-format="HH:mm:ss"
-            style="width: 100%"
-          />
-          <a-date-picker
-            v-else-if="isDateOnlyTag(record)"
-            v-model:value="record.value"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            style="width: 100%"
-          />
-          <j-value-item
-            v-else
-            v-model:modelValue="record.value"
-            :item-type="getEditorType(record)"
-            :action="FileStaticPath()"
-            :headers="getUploadHeaders()"
-            :options="getTagOptions(record)"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 100%"
-          />
+          <TagValueInput v-model="record.value" :tag="record" />
         </template>
       </template>
     </a-table>
@@ -66,34 +34,24 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { FileStaticPath } from '@jetlinks-web-core/api/comm'
-import { getUploadHeaders } from '@jetlinks-web-core/utils'
-
-type TagRecord = Record<string, any>
-
-type TagEditorRow = TagRecord & {
-  valueType: TagRecord
-}
-
-const TIME_ONLY_DATE_FORMAT = 'HH:mm:ss'
-const DATE_ONLY_FORMAT = 'YYYY-MM-DD'
+import TagValueInput from './device-detail/tags/TagValueInput.vue'
+import { createTagDraft, serializeTagDraft, getTagKey, getTagLabel, type DeviceTag } from './device-detail/tags/tagEditor'
 
 const props = defineProps<{
   open: boolean
   saving: boolean
-  tags: TagRecord[]
+  tags: DeviceTag[]
 }>()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  save: [tags: TagRecord[]]
+  save: [tags: DeviceTag[]]
 }>()
 
 const { t } = useI18n()
-const rows = ref<TagEditorRow[]>([])
+const rows = ref<DeviceTag[]>([])
 
 const columns = computed(() => [
   {
@@ -113,104 +71,8 @@ const columns = computed(() => [
   },
 ])
 
-function getTagKey(tag: TagRecord) {
-  return String(tag.key || tag.id || tag.name || '')
-}
-
-function getTagLabel(tag: TagRecord) {
-  return String(tag.name || tag.key || tag.id || '')
-}
-
-function getTagType(tag: TagRecord) {
-  return String(tag.dataType?.type || tag.type || 'string')
-}
-
-function getTagDateFormat(tag: TagRecord) {
-  return String(tag.dataType?.format || tag.format || '').trim()
-}
-
-function isTimeOnlyTag(tag: TagRecord) {
-  return getTagType(tag) === 'date' && getTagDateFormat(tag) === TIME_ONLY_DATE_FORMAT
-}
-
-function isDateOnlyTag(tag: TagRecord) {
-  return getTagType(tag) === 'date' && getTagDateFormat(tag).toUpperCase() === DATE_ONLY_FORMAT
-}
-
-function getEditorType(tag: TagRecord) {
-  const type = getTagType(tag)
-  return type === 'array' ? 'object' : type === 'file' ? 'string' : type
-}
-
-function getTagOptions(tag: TagRecord) {
-  const type = getTagType(tag)
-  if (type === 'enum') {
-    return (tag.dataType?.elements || []).map((item: TagRecord) => ({
-      label: item.text,
-      value: item.value,
-    }))
-  }
-  if (type === 'boolean') {
-    return [
-      { label: tag.dataType?.trueText, value: tag.dataType?.trueValue },
-      { label: tag.dataType?.falseText, value: tag.dataType?.falseValue },
-    ]
-  }
-  return undefined
-}
-
-function normalizeTagValue(type: string, value: unknown) {
-  // 标签接口的 value 是字符串；object/array 需要提交 JSON 文本而不是解析后的对象。
-  if (['object', 'array'].includes(type) && value !== undefined && value !== null && typeof value !== 'string') {
-    return JSON.stringify(value)
-  }
-  return value
-}
-
-function parseJsonEditorValue(value: unknown) {
-  if (typeof value !== 'string') return value
-  try {
-    return JSON.parse(value)
-  } catch {
-    return value
-  }
-}
-
-/**
- * 时间型日期标签只表达每日时刻；优先使用接口格式化值，避免将时间戳误带入日期选择。
- */
-function normalizeTimeOnlyValue(value: unknown): string | undefined {
-  if (value === undefined || value === null || value === '') return undefined
-  const text = String(value).trim()
-  if (/^\d{2}:\d{2}:\d{2}$/.test(text)) return text
-  const date = dayjs(value)
-  return date.isValid() ? date.format(TIME_ONLY_DATE_FORMAT) : undefined
-}
-
-function normalizeDateOnlyValue(value: unknown): string | undefined {
-  if (value === undefined || value === null || value === '') return undefined
-  const date = dayjs(value)
-  return date.isValid() ? date.format(DATE_ONLY_FORMAT) : undefined
-}
-
 function resetRows() {
-  rows.value = props.tags.map((tag) => {
-    const type = getTagType(tag)
-    const sourceValue = tag.formatValue ?? tag.value
-    const value = isTimeOnlyTag(tag)
-      ? normalizeTimeOnlyValue(sourceValue)
-      : isDateOnlyTag(tag)
-        ? normalizeDateOnlyValue(sourceValue)
-        : sourceValue ?? undefined
-    return {
-      ...tag,
-      value: ['object', 'array'].includes(type) ? parseJsonEditorValue(value) : value,
-      valueType: {
-        ...(tag.dataType || {}),
-        type,
-      },
-    }
-  })
+  rows.value = props.tags.map(createTagDraft)
 }
 
 function close() {
@@ -218,19 +80,7 @@ function close() {
 }
 
 function submit() {
-  // 与旧版接口保持一致：仅日期和仅时间格式不补全时分秒，其余日期仍提交完整时间字符串。
-  emit('save', rows.value.map((row) => {
-    const type = getTagType(row)
-    const { dataType, valueType, ...tag } = row
-    return {
-      ...tag,
-      value: type === 'date' && row.value
-        ? isTimeOnlyTag(row) || isDateOnlyTag(row)
-          ? row.value
-          : dayjs(row.value).format('YYYY-MM-DD HH:mm:ss')
-        : normalizeTagValue(type, row.value),
-    }
-  }))
+  emit('save', rows.value.map(serializeTagDraft))
 }
 
 watch(

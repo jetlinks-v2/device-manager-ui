@@ -1,9 +1,11 @@
 import { computed, onUnmounted, reactive, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
+import { useMenuStore } from '@jetlinks-web-core/store/menu'
 import { loadDeviceDetail, loadDeviceStates } from '../../../dataCapabilities/deviceInstanceMonitoring.service'
 import type { DeviceDetailData, DeviceStateRow } from '../../../dataCapabilities/deviceInstanceMonitoring.types'
 import type { DeviceMapPoint } from '../shared'
+import { distributionColors, distributionState } from '../DeviceMapCard/deviceMapStatus'
 
 export interface DeviceMapSelectionView {
   visible: boolean
@@ -19,12 +21,18 @@ export interface DeviceMapSelectionView {
   detail: DeviceDetailData | undefined
   detailLoading: boolean
   detailError: boolean
-  detailFields: Array<{ label: string; value: string }>
+  position: [number, number] | undefined
+  detailStatus: { color: string; text: string }
+  canOpenDetail: boolean
+  hasDetailRoute: boolean
+  openingDetail: boolean
+  detailFields: Array<{ label: string; value: string; copyable?: boolean }>
 }
 
 /** Selection is local to one map instance; only the visible page requests live states. */
-export function useDeviceMapSelection() {
+export function useDeviceMapSelection(beforeNavigate?: (deviceId: string) => void) {
   const { t, locale } = useI18n()
+  const menu = useMenuStore()
   const selected = shallowRef<DeviceMapPoint[]>([])
   const keyword = ref('')
   const page = ref(1)
@@ -36,8 +44,30 @@ export function useDeviceMapSelection() {
   const detail = shallowRef<DeviceDetailData>()
   const detailLoading = ref(false)
   const detailError = ref(false)
+  const openingDetail = ref(false)
   let statesController: AbortController | undefined
   let detailController: AbortController | undefined
+
+  // 只从运行态已授权菜单选择详情入口；没有入口时仍可查看地图摘要。
+  const detailRoute = computed(() => [
+    'iot-user-device-list/Detail', 'iot-user/device/list/Detail', 'device/Instance/Detail',
+  ].find(code => menu.hasMenu(code)))
+  const canOpenDetail = computed(() => !!detailRoute.value && !!detailDevice.value
+    && !detailLoading.value && !detailError.value && !!detail.value)
+
+  /** 使用现有菜单导航保留项目/应用上下文，不从本地路由种子补造入口。 */
+  async function openDetailPage() {
+    const code = detailRoute.value
+    const device = detailDevice.value
+    if (!code || !device || !canOpenDetail.value || openingDetail.value) return
+    openingDetail.value = true
+    try {
+      beforeNavigate?.(device.deviceId)
+      await menu.jumpPage(code, { params: { id: device.deviceId } })
+    } finally {
+      openingDetail.value = false
+    }
+  }
 
   const filtered = computed(() => {
     const search = keyword.value.trim().toLocaleLowerCase()
@@ -91,7 +121,11 @@ export function useDeviceMapSelection() {
   }
 
   const closeDetail = () => {
+    detailController?.abort()
     detailDevice.value = undefined
+    detail.value = undefined
+    detailLoading.value = false
+    detailError.value = false
   }
   const close = () => {
     // Abort immediately, before the watch queue runs or the map unmounts.
@@ -112,6 +146,7 @@ export function useDeviceMapSelection() {
     keyword.value = value
   }
   const selectDevice = (device: DeviceMapPoint) => {
+    closeDetail()
     detailDevice.value = device
   }
   const changePage = (value: number) => {
@@ -157,23 +192,28 @@ export function useDeviceMapSelection() {
     detail,
     detailLoading,
     detailError,
+    position: computed(() => (detailDevice.value || selected.value[0])?.lnglat),
+    canOpenDetail,
+    hasDetailRoute: computed(() => !!detailRoute.value),
+    openingDetail,
+    detailStatus: computed(() => {
+      const state = detail.value?.state ?? detailDevice.value?.state
+      return {
+        color: distributionColors[distributionState({ state })],
+        text: detail.value?.stateText || detailDevice.value?.stateText || t('components.DeviceMap.unknownState'),
+      }
+    }),
     detailFields: computed(() => {
-      if (!detail.value) return []
       return [
-        { label: t('components.DeviceMap.deviceId'), value: detail.value.deviceId },
-        {
-          label: t('components.DeviceMap.state'),
-          value: detail.value.stateText || t('components.DeviceMap.unknownState')
-        },
-        { label: t('components.DeviceMap.product'), value: detail.value.productName || '—' },
-        { label: t('components.DeviceMap.organization'), value: detail.value.organizationName || '—' },
+        { label: t('components.DeviceMap.deviceId'), value: detailDevice.value?.deviceId || '—', copyable: true },
+        { label: t('components.DeviceMap.product'), value: detail.value?.productName || '—' },
         {
           label: t('components.DeviceMap.lastActive'),
           value:
-            detail.value.lastActiveTime == null ? '—' : dayjs(detail.value.lastActiveTime).format('YYYY-MM-DD HH:mm:ss')
+            detail.value?.lastActiveTime == null ? '—' : dayjs(detail.value.lastActiveTime).format('MM-DD HH:mm')
         }
       ]
     })
   })
-  return { view, open, close, search, changePage, selectDevice, closeDetail, refreshStates, refreshDetail }
+  return { view, open, close, search, changePage, selectDevice, closeDetail, refreshStates, refreshDetail, openDetailPage }
 }

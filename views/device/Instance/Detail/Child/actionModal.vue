@@ -111,7 +111,7 @@
   </a-modal>
 </template>
 
-<script setup name="Save">
+<script setup>
 import {
   _undeployCloud,
   _deployCloud,
@@ -124,6 +124,8 @@ import { useChildDeviceContext } from "./useChildDeviceContext";
 import { onlyMessage } from "@jetlinks-web/utils";
 import { diagnose } from "../../../../../assets";
 import { useI18n } from "vue-i18n";
+
+defineOptions({ name: 'Save' })
 
 const { t: $t } = useI18n();
 

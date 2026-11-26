@@ -816,7 +816,7 @@
   </j-page-container>
 </template>
 
-<script lang="ts" setup name="AccessNetwork">
+<script lang="ts" setup>
 import { onlyMessage } from "@jetlinks-web/utils";
 import type { FormInstance } from "ant-design-vue";
 import {
@@ -855,6 +855,8 @@ import { useI18n } from "vue-i18n";
 import { useTabSaveSuccessBack } from '@jetlinks-web-core/hooks'
 import { I18nTextField } from '@jetlinks-web-core/components'
 import { useMenuStore } from '@jetlinks-web-core/store'
+
+defineOptions({ name: 'AccessNetwork' })
 
 const { t: $t } = useI18n();
 const menuStore = useMenuStore();

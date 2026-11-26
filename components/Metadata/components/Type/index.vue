@@ -16,12 +16,14 @@
   </div>
 </template>
 
-<script setup name="MetadataType">
+<script setup>
 import { selectProps } from 'ant-design-vue/lib/select';
 import defaultOptions from './data';
 import {useTableWrapper} from "../../context";
 import { BooleanValueMap } from "../utils";
 import {omit} from "lodash-es";
+
+defineOptions({ name: 'MetadataType' })
 
 const props = defineProps({
   ...selectProps(),

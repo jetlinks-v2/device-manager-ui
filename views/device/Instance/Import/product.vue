@@ -71,11 +71,13 @@
   </j-scrollbar>
 </template>
 
-<script setup lang='ts' name='Product'>
+<script setup lang='ts'>
 import { getProviders, queryProductList } from '../../../../api/product'
 import { accessConfigTypeFilter } from '@jetlinks-web-core/utils'
 import { device } from '../../../../assets'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Product' })
 
 const { t: $t } = useI18n();
 type Emit = {

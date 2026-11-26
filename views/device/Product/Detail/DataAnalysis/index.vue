@@ -108,7 +108,7 @@
     </div>
 </template>
 
-<script setup lang='ts' name="DataAnalysis">
+<script setup lang='ts'>
 import { useFullscreen } from '@vueuse/core';
 import { useProductStore } from '../../../../../store/product';
 import {
@@ -121,6 +121,8 @@ import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'DataAnalysis' })
 
 const { t: $t } = useI18n();
 const permissionStore = useAuthStore();

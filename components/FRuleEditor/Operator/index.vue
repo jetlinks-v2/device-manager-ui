@@ -114,7 +114,7 @@
         </div>
     </div>
 </template>
-<script setup lang="ts" name="Operator">
+<script setup lang="ts">
 import { useProductStore } from '../../../store/product';
 import type { OperatorItem } from './typings';
 import { treeFilter } from '../utils';
@@ -125,6 +125,8 @@ import {useTableWrapper, useTableFullScreen} from "../../../components/Metadata/
 import { useI18n } from 'vue-i18n';
 import {langKey} from "@jetlinks-web-core/utils/consts";
 import { cloneDeep } from 'lodash-es'
+
+defineOptions({ name: 'Operator' })
 
 const {t: $t} = useI18n();
 

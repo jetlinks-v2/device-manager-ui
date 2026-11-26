@@ -14,24 +14,15 @@ import {
   type DeviceClusterPoint
 } from '../DeviceMapCard/cluster'
 import { useDeviceMapSelection } from './useDeviceMapSelection'
+import { useDeviceMapViewport } from './useDeviceMapViewport'
 
 interface AMapApiLike {
   Bounds: new (southWest: unknown, northEast: unknown) => unknown
   LngLat: new (lng: number, lat: number) => unknown
 }
 
-interface MapInstanceLike {
-  getFitZoomAndCenterByBounds: (
-    bounds: unknown,
-    padding: [number, number, number, number],
-    maxZoom: number
-  ) => [number, [number, number]]
-  getZoom: () => number
-  setZoomAndCenter: (zoom: number, center: [number, number]) => void
-}
-
 /** Owns the location stream, cluster navigation and the selected device card. */
-export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: Ref<boolean>, enabled: Ref<boolean>) => {
+export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: Ref<boolean>, enabled: Ref<boolean>, container: Ref<HTMLElement | undefined>) => {
   const menu = useMenuStore()
   const canConfigureMap = computed(() => !isEdit.value && menu.hasMenu('system/Basis'))
   /** 配置页沿用当前菜单准入，设计预览不执行导航。 */
@@ -50,8 +41,13 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   const active = ref(true)
   const distribution = computed(() => config.value.presentation === 'distribution')
   const available = computed(() => active.value && (distribution.value || enabled.value))
-  const map = shallowRef<MapInstanceLike>()
-  const selection = useDeviceMapSelection()
+  const selection = useDeviceMapSelection(deviceId => viewport.remember(deviceId))
+  const viewport = useDeviceMapViewport(
+    computed(() => JSON.stringify([info.value?.id, config.value.scope])),
+    container,
+    computed(() => selection.view.position),
+  )
+  const { map, popup, onMapInit } = viewport
   const extraOptions = computed(() => createDeviceMapMarkerOptions(!!config.value.showStatus))
   let stream: { close: () => void } | undefined
   let refreshTimer: ReturnType<typeof setInterval> | undefined
@@ -76,13 +72,25 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     refreshTimer = undefined
   }
 
+  /** 重新校验位置后恢复原设备摘要，同时保留同坐标设备的列表入口。 */
+  function restoreSelection() {
+    const restored = viewport.takeRestoredSelection(points.value)
+    if (!restored) return
+    selection.open(restored.points)
+    selection.selectDevice(restored.device)
+  }
+
   /** 位置信息完成后再补齐状态；旧连接回调及旧状态响应均不能覆盖新的项目或刷新。 */
   async function finishLocations() {
     stopStream()
     const currentRequestId = requestId
     const locations = pendingPoints
     const deviceTerms = config.value.deviceTerms
-    if (!locations.length || (deviceTerms === undefined && !distribution.value && !config.value.showStatus)) { loading.value = false; return }
+    if (!locations.length || (deviceTerms === undefined && !distribution.value && !config.value.showStatus)) {
+      restoreSelection()
+      loading.value = false
+      return
+    }
     const controller = new AbortController()
     statesController = controller
     try {
@@ -100,6 +108,7 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
       }
       return
     }
+    restoreSelection()
     try {
       if ((!distribution.value && !config.value.showStatus) || !points.value.length) return
       const result = await loadDeviceMapStates(points.value, controller.signal)
@@ -151,9 +160,6 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     })
   }
 
-  const onMapInit = (instance: MapInstanceLike) => {
-    map.value = instance
-  }
   /** 同坐标设备继续复用原选择卡，避免一个点覆盖其他设备后无法查看。 */
   const onPointSelect = (deviceId: string) => {
     if (isEdit.value || !available.value) return
@@ -162,7 +168,9 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
   }
   const onClusterClick = ({ clusterData }: { clusterData: DeviceClusterPoint[] }) => {
     if (isEdit.value || !enabled.value || !map.value) return
-    const devices = resolveClusterDevices(clusterData)
+    // 聚合回调可能只保留坐标和身份，摘要仍使用本轮完整点位中的设备状态。
+    const byId = new Map(points.value.map(point => [point.deviceId, point]))
+    const devices = resolveClusterDevices(clusterData).map(point => byId.get(point.deviceId) || point)
     if (!devices.length) return
     if (shouldOpenDeviceCluster(devices, map.value.getZoom())) {
       selection.open(devices)
@@ -209,5 +217,5 @@ export const useDeviceMap = (info: Ref<DashboardCardInfo | undefined>, isEdit: R
     stopRefreshTimer()
     stopStream()
   })
-  return { config, distribution, points, loading, error, stateError, extraOptions, selection, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
+  return { config, distribution, points, loading, error, stateError, extraOptions, selection, popup, refresh, onMapInit, onClusterClick, onPointSelect, canConfigureMap, openMapConfig }
 }

@@ -59,9 +59,11 @@
         @change="change"
     />
 </template>
-<script setup name="MetricValueItem">
+<script setup>
 import { Form } from 'ant-design-vue'
 import {useTableWrapper} from "../../../../../../../../components/Metadata/context";
+
+defineOptions({ name: 'MetricValueItem' })
 
 const props = defineProps({
     value: {

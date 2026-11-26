@@ -1,4 +1,4 @@
-<script setup name="ObjectItem">
+<script setup>
 import BooleanSelect from "../BooleanSelect/index.vue";
 import {
   ArrayParams,
@@ -9,6 +9,8 @@ import {
 } from "../../index";
 import {isObject} from "lodash-es";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'ObjectItem' })
 
 const { t: $t, locale } = useI18n();
 

@@ -14,13 +14,15 @@
     <JsonViewer :value="data" style="background-color: #fafafa" :expanded="true" :expandDepth="10" deep="4"></JsonViewer>
 </template>
 
-<script setup lang="ts" name="Shadow">
+<script setup lang="ts">
 import 'vue3-json-viewer/dist/index.css';
 import { JsonViewer } from 'vue3-json-viewer';
 import { useInstanceStore } from '../../../../../store/instance';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { getDeviceShadow } from '../../../../../api/instance';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Shadow' })
 
 const { t: $t } = useI18n();
 const instanceStore = useInstanceStore();

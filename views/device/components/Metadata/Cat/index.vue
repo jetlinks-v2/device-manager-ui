@@ -25,7 +25,7 @@
     </a-spin>
   </a-drawer>
 </template>
-<script setup lang="ts" name="Cat">
+<script setup lang="ts">
 import { downloadJson } from '@jetlinks-web-core/utils'
 import { useInstanceStore } from '../../../../../store/instance';
 import { useProductStore } from '../../../../../store/product';
@@ -34,6 +34,8 @@ import { convertMetadata, getCodecs, detail as productDetail } from '../../../..
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { omit , cloneDeep } from "lodash-es";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Cat' })
 
 const { t: $t } = useI18n();
 

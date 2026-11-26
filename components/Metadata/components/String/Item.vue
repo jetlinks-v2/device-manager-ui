@@ -12,7 +12,10 @@
   </a-form-item>
 </template>
 
-<script setup name="MetadataStringItem">
+<script setup>
+
+defineOptions({ name: 'MetadataStringItem' })
+
 
 const props = defineProps({
   value: {

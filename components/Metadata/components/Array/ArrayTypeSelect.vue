@@ -16,11 +16,13 @@
     </div>
 </template>
 
-<script setup name="ArrayTypeSelect">
+<script setup>
 import { selectProps } from 'ant-design-vue/lib/select';
 import defaultOptions from '../Type/data';
 import { useTableWrapper } from '../../context';
 import { BooleanValueMap } from '../utils';
+
+defineOptions({ name: 'ArrayTypeSelect' })
 
 const props = defineProps({
     ...selectProps(),

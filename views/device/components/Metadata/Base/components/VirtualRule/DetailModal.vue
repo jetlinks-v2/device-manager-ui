@@ -16,7 +16,10 @@
   </a-modal>
 </template>
 
-<script setup name="DetailModal">
+<script setup>
+
+defineOptions({ name: 'DetailModal' })
+
 defineProps({
   value: {
     type: String,

@@ -143,7 +143,7 @@
     </div>
 </template>
 
-<script setup lang='ts' name='MetadataMap'>
+<script setup lang='ts'>
 import { storeToRefs } from 'pinia';
 import { onlyMessage } from '@jetlinks-web/utils';
 import {
@@ -155,6 +155,8 @@ import { useInstanceStore } from '../../../../../store/instance';
 import { cloneDeep } from 'lodash-es';
 import {device} from "../../../../../assets";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'MetadataMap' })
 
 const { t: $t } = useI18n();
 const deviceStore = useInstanceStore();

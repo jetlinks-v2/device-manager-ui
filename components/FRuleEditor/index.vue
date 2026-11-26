@@ -59,13 +59,15 @@
         </template>
     </a-modal>
 </template>
-<script setup lang="ts" name="FRuleEditor">
+<script setup lang="ts">
 import Editor from './Editor/index.vue';
 import Debug from './Debug/index.vue';
 import Operator from './Operator/index.vue';
 import { cloneDeep } from 'lodash-es';
 import {useTableWrapper} from "../../components/Metadata/context";
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'FRuleEditor' })
 
 const { t: $t } = useI18n();
 interface Emits {

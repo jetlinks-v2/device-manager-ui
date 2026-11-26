@@ -11,8 +11,10 @@
   </div>
 </template>
 
-<script setup name='DetailHeaderTitle'>
+<script setup>
 import ResourceType from './ResourceType.vue'
+
+defineOptions({ name: 'DetailHeaderTitle' })
 
 const props = defineProps({
   data: {

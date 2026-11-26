@@ -18,11 +18,13 @@
   </a-modal>
 </template>
 
-<script setup lang='ts' name='InklingModal'>
+<script setup lang='ts'>
 import InklingDevice from '../../../../../components/InklingDevice'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { savePluginData, getPluginData } from '../../../../../../../api/link/plugin'
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'InklingModal' })
 
 const { t: $t } = useI18n();
 type Emit = {

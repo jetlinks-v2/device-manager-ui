@@ -98,7 +98,7 @@
         <Cat v-if="cat" v-model:visible="cat" @close="cat = false" :type="type" />
     </div>
 </template>
-<script setup lang="ts" name="Metadata">
+<script setup lang="ts">
 import { deleteMetadata } from '../../../../api/instance.js';
 import { message } from 'ant-design-vue';
 import { useInstanceStore } from '../../../../store/instance';
@@ -111,6 +111,8 @@ import { useAuthStore } from '@jetlinks-web-core/store';
 import { isEqual } from 'lodash-es';
 import { useI18n } from 'vue-i18n';
 import { useElementSize } from '@vueuse/core';
+
+defineOptions({ name: 'Metadata' })
 
 const { t: $t } = useI18n();
 

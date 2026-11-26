@@ -48,12 +48,14 @@
     </a-modal>
 </template>
 
-<script setup name="Save">
+<script setup>
 import { getProductListNoPage, addDevice } from '../../../../../../api/instance';
 
 import { useChildDeviceContext } from '../useChildDeviceContext';
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
+
+defineOptions({ name: 'Save' })
 
 const { t: $t } = useI18n();
 const emits = defineEmits(['close']);

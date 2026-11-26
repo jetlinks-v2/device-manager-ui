@@ -15,12 +15,14 @@
   </div>
 </template>
 
-<script setup name="TableFormItem">
+<script setup>
 import {useInjectError, useInjectForm, useTableWrapper} from "./context";
 import {get, isArray } from 'lodash-es'
 import {onBeforeUnmount, computed} from "vue";
 import { useProvideFormItemContext } from 'ant-design-vue/es/form/FormItemContext'
 import {TABLE_FORM_ITEM_ERROR} from "./consts";
+
+defineOptions({ name: 'TableFormItem' })
 
 const props = defineProps({
   name: {

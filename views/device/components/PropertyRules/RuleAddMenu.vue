@@ -25,6 +25,7 @@ const labels: Record<RuleAddPart, { icon: string; label: string }> = {
   range: { icon: 'SafetyOutlined', label: 'PropertyRules.validRange' },
   step: { icon: 'LineChartOutlined', label: 'PropertyRules.part.step' },
   scale: { icon: 'CalculatorOutlined', label: 'PropertyRules.part.scale' },
+  formula: { icon: 'FunctionOutlined', label: 'PropertyRules.correction.formula' },
   fallback: { icon: 'HistoryOutlined', label: 'PropertyRules.part.fallback' },
   file: { icon: 'FileOutlined', label: 'PropertyRules.part.file' },
   alarm: { icon: 'AlertOutlined', label: 'PropertyRules.alarm' },
@@ -35,7 +36,7 @@ const labels: Record<RuleAddPart, { icon: string; label: string }> = {
 const groups = computed(() => {
   const result = [
   { key: 'cleaning', parts: props.parts.filter(part => ['values', 'range', 'step'].includes(part)) },
-  { key: 'processing', parts: props.parts.filter(part => part === 'scale' || part === 'fallback' || part === 'file') },
+  { key: 'processing', parts: props.parts.filter(part => ['scale','formula','fallback','file'].includes(part)) },
   { key: 'alarm', parts: props.parts.filter(part => part === 'alarm') },
   { key: 'sampling', parts: props.parts.filter(part => ['sampling', 'interval', 'change'].includes(part)) },
   ].filter(group => group.parts.length)

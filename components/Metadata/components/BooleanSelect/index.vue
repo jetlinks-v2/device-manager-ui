@@ -11,11 +11,13 @@
   </a-select>
 </template>
 
-<script setup name="BooleanSelect">
+<script setup>
 import {useTableWrapper} from "../../context";
 import {isBoolean} from "lodash-es";
 import { selectProps } from 'ant-design-vue/lib/select'
 import i18n from "@jetlinks-web-core/locales";
+
+defineOptions({ name: 'BooleanSelect' })
 
 const props = defineProps({
   ...selectProps(),

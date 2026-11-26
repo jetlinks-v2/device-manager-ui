@@ -5,9 +5,11 @@
     <FRuleEditor v-if="visible" :id="id" :aggList="aggList" :propertiesOptions="propertiesOptions" :value="value" :virtualRule="virtualRule" @close="onClose" @save="onChange" />
 </template>
 
-<script setup lang="ts" name="Rule">
+<script setup lang="ts">
 import FRuleEditor from '../../../../../../../components/FRuleEditor/index.vue';
 import {Form} from "ant-design-vue";
+
+defineOptions({ name: 'Rule' })
 
 const formItemContext = Form.useInjectFormItemContext();
 

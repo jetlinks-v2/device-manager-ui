@@ -9,10 +9,12 @@
     </small>
   </div>
 </template>
-<script lang="ts" setup name="ResourceUsage">
+<script lang="ts" setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatMemorySize } from '../utils/monitorData'
+
+defineOptions({ name: 'ResourceUsage' })
 
 const props = defineProps({
   percent: { type: Number, default: undefined },

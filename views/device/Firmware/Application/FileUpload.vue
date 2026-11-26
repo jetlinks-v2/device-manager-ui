@@ -14,7 +14,7 @@
     />
 </template>
 
-<script setup lang="ts" name="ApplicationFirmwareFileUpload">
+<script setup lang="ts">
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { FileUpload as CoreFileUpload } from '@jetlinks-web-core/components';
 import { notification as Notification, Upload } from 'ant-design-vue';
@@ -25,6 +25,8 @@ import type {
     ApplicationFirmwareFile,
     FirmwareUploadResult,
 } from '../type';
+
+defineOptions({ name: 'ApplicationFirmwareFileUpload' })
 
 interface FirmwareUploadResponse {
     success?: boolean;

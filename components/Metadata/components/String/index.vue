@@ -22,9 +22,11 @@
   </PopoverModal>
 </template>
 
-<script setup name="MetadataString">
+<script setup>
 import { PopoverModal } from '../index'
 import Item from './Item.vue'
+
+defineOptions({ name: 'MetadataString' })
 
 const emit = defineEmits(['update:value', 'confirm', 'cancel']);
 

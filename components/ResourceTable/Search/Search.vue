@@ -74,7 +74,7 @@
   </div>
 </template>
 
-<script setup name='ProSearch'>
+<script setup>
 import ParamsOptions from './ParamsOptions.vue'
 import ClassifyOptions from './ClassifyOptions.vue'
 import {useRequest} from '@jetlinks-web/hooks'
@@ -83,6 +83,8 @@ import {cloneDeep, map, omit} from 'lodash-es'
 import {useI18n} from 'vue-i18n'
 import {useRouteQuery} from "@vueuse/router";
 import {useRoute} from "vue-router";
+
+defineOptions({ name: 'ProSearch' })
 
 const {t: $t} = useI18n()
 const props = defineProps({

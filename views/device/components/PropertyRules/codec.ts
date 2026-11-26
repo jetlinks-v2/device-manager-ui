@@ -4,6 +4,7 @@ import { isAlarmProperty, readCondition, validateAlarmConditions } from '../../a
 import { buildSampling, isSamplingNode, validateSampling, type SamplingDraft } from './sampling'
 import { buildFallback, scalarValue, validFallback, type ValueRuleDraft } from './values/config'
 import { validPropertyOutput } from './values/metadata'
+import { correctionTree,correctionIsFormula,isCorrectionExpression,buildCorrectionSteps,type CorrectionDraft } from './correction'
 
 export interface RuleNode {
   provider: string
@@ -11,14 +12,20 @@ export interface RuleNode {
   [key: string]: unknown
 }
 export type RulePart = 'values' | 'range' | 'step' | 'scale' | 'fallback' | 'alarm' | 'sampling' | 'file'
-export type RuleAddPart = RulePart | 'interval' | 'change'
+export type RuleAddPart = RulePart | 'interval' | 'change' | 'formula'
+/** Presentation validity is not a saved change. Uncommitted formula content is tracked separately. */
+export function ruleDraftJson(draft?:RuleDraft) {
+  if(!draft)return ''
+  const {correctionInvalid,correctionPending,...configuration}=draft
+  return JSON.stringify(configuration)
+}
 export interface ParsedRule {
   editable: boolean
   nodes: Partial<Record<RulePart, RuleNode>>
   raw?: ThingPropertyPreprocess
   providers: string[]
 }
-export interface RuleDraft extends SamplingDraft, ValueRuleDraft {
+export interface RuleDraft extends SamplingDraft, ValueRuleDraft, CorrectionDraft {
   recordInvalid?: boolean
   valuesEnabled: boolean
   valuesMode: 'ignore' | 'keep' | 'replace'
@@ -53,6 +60,7 @@ export function availableRuleParts(property: ThingModelProperty, configured: Par
     parts.push('interval')
     if (numeric || ['string', 'boolean', 'enum'].includes(String(type))) parts.push('change')
   }
+  if(parts.includes('scale'))parts.splice(parts.indexOf('scale')+1,0,'formula')
   return parts
 }
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
@@ -64,6 +72,7 @@ function classify(node: RuleNode): RulePart | undefined {
   const config = node.configuration
   if (hasAlarmRelieveProcessor(node)) return 'alarm'
   if (isSamplingNode(node)) return 'sampling'
+  if (node.provider === 'expression' && isCorrectionExpression(config.expression)) return 'scale'
   if (['scale', 'calibration'].includes(node.provider) && validScale(config.scale) && (config.offset === undefined || validScale(config.offset))) return 'scale'
   if (node.provider === 'fallback' && validFallback(config)) return 'fallback'
   if (node.provider === 'max-step' && validStep(config)) return 'step'
@@ -209,7 +218,10 @@ export function buildRule(parsed: ParsedRule, draft: RuleDraft): ThingPropertyPr
     } })
   }
   if (draft.stepEnabled) nodes.step = updateNode(parsed.nodes.step, { provider: 'max-step', configuration: { maxStep: draft.maxStep, baselineTtlMillis: draft.baselineTtl } })
-  if (draft.scaleEnabled) nodes.scale = updateNode(parsed.nodes.scale, {
+  if (draft.scaleEnabled && draft.correction) nodes.scale = updateNode(parsed.nodes.scale?.provider === 'expression' ? parsed.nodes.scale : undefined, {
+    provider:'expression', configuration:{expression:correctionTree(draft),editorMode:correctionIsFormula(draft) ? 'formula' : 'simple'},
+  })
+  else if (draft.scaleEnabled) nodes.scale = updateNode(parsed.nodes.scale, {
     provider: draft.offset && !/^[+-]?0*(?:\.0*)?(?:[eE][+-]?\d+)?$/.test(draft.offset) ? 'calibration' : 'scale',
     configuration: { scale: draft.scale, ...(draft.offset !== undefined ? { offset: draft.offset } : {}) },
   })
@@ -249,7 +261,10 @@ export function validateDraft(draft: RuleDraft, numeric: boolean, property?: Thi
     || property && !numeric && !validPropertyOutput(draft.replacementValue, property))) return 'PropertyRules.validation.replacement'
   if (draft.rangeEnabled && (!numeric || !validRange({ min: draft.min, max: draft.max }))) return 'PropertyRules.validation.range'
   if (draft.stepEnabled && (!numeric || !validStep({ maxStep: draft.maxStep, baselineTtlMillis: draft.baselineTtl }))) return 'PropertyRules.validation.step'
-  if (draft.scaleEnabled && (!numeric || !validScale(draft.scale) || draft.offset !== undefined && !validScale(draft.offset))) return 'PropertyRules.validation.scale'
+  if (draft.scaleEnabled && (!numeric || (draft.correction
+    ? draft.correctionInvalid || !isCorrectionExpression(draft.correction)
+      || draft.correctionMode === 'simple' && (!draft.correctionSteps || !buildCorrectionSteps(draft.correctionSteps))
+    : !validScale(draft.scale) || draft.offset !== undefined && !validScale(draft.offset)))) return 'PropertyRules.validation.scale'
   if (draft.fallbackEnabled && (!validFallback(buildFallback(draft).configuration)
     || draft.fallbackMode === 'previous' && draft.fallbackFixedEnabled && !scalarValue(draft.fallbackValue)
     || numeric && draft.fallbackValue != null && typeof draft.fallbackValue !== 'number'

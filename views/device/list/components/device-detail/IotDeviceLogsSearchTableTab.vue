@@ -29,7 +29,9 @@
       :bodyStyle="{ padding: 0 }"
     >
       <template #type="record">
-        <span class="log-chip">{{ record.typeText }}</span>
+        <a-tooltip :title="record.typeText">
+          <span class="log-chip">{{ record.typeText }}</span>
+        </a-tooltip>
       </template>
       <template #direction="record">
         <span class="log-direction" :data-direction="record.direction">
@@ -183,7 +185,7 @@ const filterFields = computed<ConditionFilterField[]>(() => [
 ])
 
 const columns = computed(() => [
-  { title: $t('IotDeviceDetail.logs.column.type'), dataIndex: 'type', key: 'type', scopedSlots: true, width: 120 },
+  { title: $t('IotDeviceDetail.logs.column.type'), dataIndex: 'type', key: 'type', scopedSlots: true, width: 160 },
   { title: $t('IotDeviceDetail.logs.column.direction'), dataIndex: 'direction', key: 'direction', scopedSlots: true, width: 100 },
   { title: $t('IotDeviceDetail.logs.column.time'), dataIndex: 'time', key: 'time', scopedSlots: true, width: 180 },
   { title: $t('IotDeviceDetail.logs.column.content'), dataIndex: 'content', key: 'content', scopedSlots: true },

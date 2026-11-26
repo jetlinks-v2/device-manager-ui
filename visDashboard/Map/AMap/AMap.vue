@@ -8,9 +8,11 @@
   </div>
 </template>
 
-<script setup lang="ts" name="DeviceVideo">
+<script setup lang="ts">
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { debounce } from 'lodash-es'
+
+defineOptions({ name: 'DeviceVideo' })
 
 const props = defineProps({
   info: {

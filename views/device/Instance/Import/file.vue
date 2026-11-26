@@ -69,7 +69,7 @@
     </div>
 </template>
 
-<script setup lang='ts' name='DeviceImportFile'>
+<script setup lang='ts'>
 import {inject,Ref} from 'vue'
 import { FileStaticPath } from '@jetlinks-web-core/api/comm';
 import { onlyMessage, downloadFileByUrl } from '@jetlinks-web/utils';
@@ -77,6 +77,8 @@ import { deviceImport, pluginDeviceImport, templateDownload } from '../../../../
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { useI18n } from 'vue-i18n';
 import {getUploadHeaders} from "@jetlinks-web-core/utils";
+
+defineOptions({ name: 'DeviceImportFile' })
 
 const { t: $t } = useI18n();
 const props = defineProps({

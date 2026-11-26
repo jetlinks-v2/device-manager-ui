@@ -421,7 +421,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="MetadataBase">
+<script setup lang="ts">
 import type {
   MetadataItem,
   MetadataType,
@@ -471,6 +471,8 @@ import { EventLevel } from "../../../data";
 import { message } from "ant-design-vue";
 import { Import } from "./components/Import";
 import { useI18n } from "vue-i18n";
+
+defineOptions({ name: 'MetadataBase' })
 
 const { t: $t } = useI18n();
 

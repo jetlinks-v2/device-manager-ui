@@ -71,7 +71,7 @@
   </div>
 </template>
 
-<script setup lang="ts" name="Terminal">
+<script setup lang="ts">
 import { useInstanceStore } from "../../../../../store/instance";
 import { storeToRefs } from "pinia";
 import TerminalPanel from "./components/TerminalPanel.vue";
@@ -79,6 +79,8 @@ import BrowserPanel from "./components/BrowserPanel.vue";
 import RemoteDesktopPanel from "./components/RemoteDesktopPanel.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import NetworkDebugPanel from "./components/NetworkDebugPanel.vue";
+
+defineOptions({ name: 'Terminal' })
 
 const instanceStore = useInstanceStore();
 const { current } = storeToRefs(instanceStore);
