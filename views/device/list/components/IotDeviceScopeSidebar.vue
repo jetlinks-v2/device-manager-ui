@@ -1,5 +1,6 @@
 <template>
-  <div class="iot-device-scope" :aria-label="$t('IotDeviceList.scope.aria')">
+  <SplitterPane class="iot-device-scope" :scroll="false" :aria-label="$t('IotDeviceList.scope.aria')">
+    <template #header>
     <a-segmented v-model:value="scopeType" block class="iot-device-scope__tabs" :options="scopeOptions">
       <template #label="{ payload }">
         <span class="iot-device-scope__tab">
@@ -8,6 +9,9 @@
         </span>
       </template>
     </a-segmented>
+    <slot name="header-action" />
+    </template>
+    <template #toolbar>
     <a-input
       v-model:value="searchKeyword"
       allow-clear
@@ -16,6 +20,7 @@
     >
       <template #prefix><AIcon type="SearchOutlined" aria-hidden="true" /></template>
     </a-input>
+    </template>
     <div class="iot-device-scope__body">
       <div class="iot-device-scope__scroll">
         <AutoTree
@@ -74,11 +79,12 @@
         {{ $t('IotDeviceList.scope.createGroup') }}
       </a-button>
     </div>
-  </div>
+  </SplitterPane>
 </template>
 
 <script setup lang="ts">
 import type { DeviceGroup } from '@device-manager-ui/api/deviceGroup'
+import { SplitterPane } from '@jetlinks-web-core/components'
 import IotTreeNodeRow from '@device-manager-ui/components/IotTreeNodeRow.vue'
 import { useIotDeviceScopeSidebar } from '../hooks/useIotDeviceScopeSidebar'
 
@@ -115,9 +121,6 @@ const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeD
 
 <style scoped>
 .iot-device-scope {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: var(--space-4);
   min-height: 0;
   height: 100%;
   overflow: hidden;
@@ -128,7 +131,10 @@ const { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeD
   flex-direction: column;
   gap: var(--space-4);
   min-height: 0;
+  flex: 1;
 }
+
+.iot-device-scope__tabs { flex:1; min-width:0; }
 
 .iot-device-scope__scroll {
   min-height: 0;

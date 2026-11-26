@@ -136,6 +136,9 @@ const getComponents = () => ({})
  * 不需要把开关写进 `baseMenu.json` 再重新初始化菜单。
  */
 const getContentPanelOverrides = () => ({
+  'iot-user-device-list': { padding: 0 },
+  'iot-user/device/list': { padding: 0 },
+  'device/list': { padding: 0 },
   'link/DashBoard': false,
 })
 

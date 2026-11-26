@@ -17,17 +17,21 @@
     <SlantedTabs class="unified-device-list__types" :activeKey="activeType" :options="tabs" @change="changeType(String($event))" />
   </PageChrome>
   <FullPage flex transparent-background class="unified-device-list">
-    <EqualHeightColumns class="unified-device-list__layout" :left-width="scopeCollapsed ? '2.5rem' : '15rem'" right-width="1fr">
-		    <template #left>
-			    <a-spin v-if="!scopeCollapsed" :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
-				    <IotDeviceScopeSidebar v-bind="sidebarProps" @change="handleScopeChange" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup" />
-			    </a-spin>
-<!--			    <a-button :class="['unified-device-list__scope-toggle', { 'is-collapsed': scopeCollapsed }]" type="text" :aria-label="scopeCollapsed ? '展开设备范围' : '收起设备范围'" @click="scopeCollapsed = !scopeCollapsed"><AIcon :type="scopeCollapsed ? 'RightOutlined' : 'LeftOutlined'" /></a-button>-->
-		    </template>
-		    <template #right>
-			    <div class="unified-device-list__panel">
-				    <a-flex align="center" justify="space-between" wrap="wrap" :gap="12" class="unified-device-list__filters">
+    <ResponsiveSplitter ref="scopePanel" class="unified-device-list__layout" :default-size="240" :min="220" :max="360" :end-min="480" :panel-title="t('IotDeviceList.scope.aria')">
+        <template #start="{ compact, close }">
+          <a-spin :spinning="scopeLoading" wrapper-class-name="unified-device-list__scope">
+            <IotDeviceScopeSidebar v-bind="sidebarProps" @change="value => { handleScopeChange(value); if (compact) close() }" @create-group="openCreateGroup" @create-child-group="openCreateChildGroup" @edit-group="openEditGroup" @delete-group="confirmDeleteGroup">
+              <template v-if="!compact" #header-action><PanelCollapseButton :collapsed="false" :aria-controls="scopePanel?.startId" @toggle="scopePanel?.toggle()" /></template>
+            </IotDeviceScopeSidebar>
+          </a-spin>
+        </template>
+        <template #end="{ collapsed, toggle, startId }">
+          <SplitterPane :scroll="false">
+            <template #header>
+              <PanelCollapseButton v-if="collapsed" :collapsed="true" :aria-controls="startId" @toggle="toggle" />
 					    <IotDeviceAssetSearchBar v-model:filter-terms="searchTerms" :filter-fields="filterFields" :common-filter-fields="commonFilterFields" @search="search" />
+            </template>
+            <template #toolbar>
 					    <RegistryComponent page-code="unified-device-list" code="toolbar-actions" :active-type="activeType" @saved="refresh" is="a-space" :size="12" class="unified-device-list__toolbar-actions">
 					    <a-button-group role="group" :aria-label="t('IotDeviceList.filter.status')">
 					      <a-button
@@ -65,7 +69,8 @@
 						      </template>
 						    </a-dropdown>
 				    </RegistryComponent>
-				    </a-flex>
+            </template>
+            <div class="unified-device-list__panel">
 				    <a-flex v-if="batchMode" wrap="wrap" :gap="12" class="unified-device-list__batch">
 					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
 					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="handleBatchChanged" />
@@ -202,8 +207,9 @@
 				    </div>
 				    <JPagination class="unified-device-list__pagination" :page-index="pageIndex" :page-size="pageSize" :total="total" :page-size-options="['12', '24', '48', '96']" show-size-changer is-show-content @change="changePage" />
 			    </div>
-		    </template>
-	    </EqualHeightColumns>
+          </SplitterPane>
+        </template>
+      </ResponsiveSplitter>
     <component v-for="provider in providers.filter(item => item.listGuide)" :key="`guide-${provider.id}`"
       :is="provider.listGuide" :active="activeType === provider.id" :request="guideRequest"
       :configuration-request="configurationRequest" :project-id="guideProjectId" @refresh="refresh" />
@@ -231,7 +237,7 @@ import JPagination from '@jetlinks-web/components/es/ProTable/Pagination'
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
 import { TOKEN_KEY_URL } from '@jetlinks-web/constants'
 import { getBaseApi } from '@jetlinks-web-core/utils'
-import EqualHeightColumns from '@jetlinks-web-core/components/EqualHeightColumns/index.vue'
+import { PanelCollapseButton, ResponsiveSplitter, SplitterPane } from '@jetlinks-web-core/components'
 import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
@@ -289,7 +295,7 @@ const gatewayMetricTargets = computed(() => activeType.value === 'gateway' && !l
   : [])
 const gatewayMetrics = useGatewayMetrics?.(gatewayMetricTargets)
 const { sidebarProps, spaceAreaSupported, loading: scopeLoading, loadError: scopeLoadError, handleScopeChange } = scope
-const scopeCollapsed = ref(false)
+const scopePanel = ref<InstanceType<typeof ResponsiveSplitter>>()
 function formatTableTime(value?: string | number | null) {
   if (!value || value === '--') return t('IotDeviceList.scope.noReport')
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss')
@@ -464,25 +470,10 @@ const [DefineEmptyCreateAction2, EmptyCreateButtonAction2] = createReusableTempl
 .unified-device-list__types { --slanted-tabs-background: transparent; z-index: 2; }
 .unified-device-list__layout { flex: 1 1 0; width: 100%; min-height: 0;align-items: stretch; }
 .unified-device-list :deep(.unified-device-list__scope), .unified-device-list :deep(.unified-device-list__scope > .ant-spin-container) { height: 100%; min-height: 0; }
-.unified-device-list :deep(.iot-device-scope > .ant-flex:empty) { display: none; }
-.unified-device-list__scope-toggle { position: absolute; top: 50%; right: -1px; transform: translate(100%, -50%); z-index: 4; width: 22px; height: 56px; padding: 0; color: var(--primary-color); background: color-mix(in srgb, var(--info-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary-color) 22%, transparent); border-left: 0; border-radius: 0 10px 10px 0; box-shadow: none; opacity: .75; transition: opacity .18s, width .18s, transform .18s; }
-.unified-device-list__layout > .equal-height-columns__pane:first-child { position: relative; overflow: visible; }
-.unified-device-list__scope-toggle.is-collapsed { right: 0; transform: translate(0, -50%); border-left: 1px solid color-mix(in srgb, var(--primary-color) 22%, transparent); }
-.unified-device-list__layout > .equal-height-columns__pane:first-child:hover .unified-device-list__scope-toggle, .unified-device-list__scope-toggle:hover { width: 26px; opacity: 1; }
-
-.unified-device-list :deep(.iot-device-scope.content-panel) { background: color-mix(in srgb, var(--bg-trans-8) 35%, transparent); border: 0; box-shadow: none; padding: 8px; }
-.unified-device-list__layout > .equal-height-columns__pane:first-child:has(.unified-device-list__scope-toggle) { background: transparent; border-radius: var(--r-6); }
-
 .unified-device-list__panel { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: var(--space-3); overflow: hidden; }
-.unified-device-list__panel.content-panel {
-  --device-table-fixed-bg: color-mix(in srgb, var(--info-bg) 28%, var(--bg));
-  --device-table-header-bg: color-mix(in srgb, var(--info-bg) 55%, var(--bg));
-  background-color: color-mix(in srgb, var(--info-bg) 25%, var(--bg-trans-8));
-}
-.unified-device-list__filters, .unified-device-list__batch, .unified-device-list__pagination { flex-shrink: 0; }
-.unified-device-list__filters { align-items: center; flex-wrap: nowrap; }
-.unified-device-list__filters > .device-asset-search { flex: 1 1 auto; width: auto; min-width: 0; }
-.unified-device-list__toolbar-actions { flex-shrink: 0; margin-inline-start: auto; gap: 8px; }
+.unified-device-list__batch, .unified-device-list__pagination { flex-shrink: 0; }
+.unified-device-list__layout :deep(.device-asset-search) { flex: 1; min-width: 0; }
+.unified-device-list__toolbar-actions { display:flex; flex:1; min-width:0; flex-wrap:wrap; gap:8px; }
 .unified-device-list__action-divider { margin: 0 2px; height: 24px; opacity: .45; }
 .unified-device-list__category { flex-shrink: 0; margin-inline-end: 0; color: var(--ink-3); white-space: nowrap; }
 .unified-device-list__table { flex: 1; min-height: 0; overflow: auto; }
