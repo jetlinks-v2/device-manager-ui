@@ -20,10 +20,14 @@ test('query-only users cannot use the create or batch operations', () => {
   for (const action of ['add', 'delete', 'export', 'import', 'enable', 'syncStatus']) {
     assert.equal(can(action), false, action)
   }
-  assert.match(source, /canDeviceBatchAction\('add'\).*type="primary"/)
-  assert.match(source, /v-if="canDeviceBatchAction\('syncStatus'\)" key="syncStatus"/)
+  assert.ok(source.includes(`:disabled="busy || !canDeviceBatchAction('add')"`))
+  for (const [key, action] of Object.entries({ export: 'export', import: 'import', activateAll: 'enable', syncStatus: 'syncStatus' })) {
+    assert.ok(source.includes(`:disabled="!canDeviceBatchAction('${action}')" key="${key}"`))
+  }
+  assert.match(source, /:disabled="!canConfigureGatewayPlugins" key="plugins"/)
+  assert.match(actionsSource, /provider.id !== 'gateway' \|\| canDeviceAction\('add'\)/)
   for (const action of ['enable', 'disable']) {
-    assert.ok(source.includes(`v-if="canDeviceBatchAction('enable')" :disabled="!selectedIds.length || busy" @click="batchToggle('${action}')"`))
+    assert.ok(source.includes(`:disabled="!canDeviceBatchAction('enable') || !selectedIds.length || busy" @click="batchToggle('${action}')"`))
   }
 })
 

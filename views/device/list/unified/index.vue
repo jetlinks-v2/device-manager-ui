@@ -2,7 +2,7 @@
   <!-- 卡片切换充当面板顶栏：flush 让它与布局面板贴合，左上角一起拉平。 -->
 
   <DefineEmptyCreateAction1>
-    <a-button v-if="(activeType === 'all' || isIotEntry) && canDeviceBatchAction('add')" type="primary" :disabled="busy" @click="openCreateDrawer">
+    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy || !canDeviceBatchAction('add')" @click="openCreateDrawer">
      <template #icon><AIcon type="PlusOutlined" /></template>
      {{ t('IotDeviceList.action.create') }}
     </a-button>
@@ -45,19 +45,19 @@
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
 						    <EmptyCreateButtonAction1 v-if="activeType === 'all' || isIotEntry" />
 						    <EmptyCreateButtonAction2 v-if="activeProvider?.create" />
-						    <a-dropdown v-if="hasBatchMenu">
+						    <a-dropdown>
 						      <a-button>
 						        {{ t('UnifiedDeviceList.batch') }}
 						        <AIcon type="DownOutlined" />
 						      </a-button>
 						      <template #overlay>
 						        <a-menu @click="handleBatchMenuClick">
-					          <a-menu-item v-if="canDeviceBatchAction('export')" key="export">{{ t('Instance.index.133466-30') }}</a-menu-item>
-					          <a-menu-item v-if="!isSaaS && canDeviceBatchAction('import')" key="import">{{ t('Instance.index.133466-31') }}</a-menu-item>
-					          <a-menu-item v-if="canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
+					          <a-menu-item :disabled="!canDeviceBatchAction('export')" key="export">{{ t('Instance.index.133466-30') }}</a-menu-item>
+					          <a-menu-item v-if="!isSaaS" :disabled="!canDeviceBatchAction('import')" key="import">{{ t('Instance.index.133466-31') }}</a-menu-item>
+					          <a-menu-item :disabled="!canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
 						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}<DocumentHelp code="iot-user-device-list" help-key="batch.algorithms" /></a-menu-item>
-						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}<DocumentHelp code="iot-user-device-list" help-key="batch.plugins" /></a-menu-item>
-						          <a-menu-item v-if="canDeviceBatchAction('syncStatus')" key="syncStatus">
+						          <a-menu-item v-if="activeType === 'gateway'" :disabled="!canConfigureGatewayPlugins" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}<DocumentHelp code="iot-user-device-list" help-key="batch.plugins" /></a-menu-item>
+						          <a-menu-item :disabled="!canDeviceBatchAction('syncStatus')" key="syncStatus">
                         {{ t('IotDeviceList.action.syncStatus') }}
                         <DocumentHelp code="iot-user-device-list" help-key="batch.syncStatus" />
                       </a-menu-item>
@@ -70,9 +70,9 @@
 					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
 					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="handleBatchChanged" />
 					    <template v-else>
-					    <a-button v-if="canDeviceBatchAction('enable')" :disabled="!selectedIds.length || busy" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
-					    <a-button v-if="canDeviceBatchAction('enable')" :disabled="!selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
-					    <a-button v-if="canDeviceBatchAction('delete')" danger :disabled="!selectedIds.length || busy" @click="batchRemove">{{ t('Instance.index.133466-35') }}</a-button>
+					    <a-button :disabled="!canDeviceBatchAction('enable') || !selectedIds.length || busy" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
+					    <a-button :disabled="!canDeviceBatchAction('enable') || !selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
+					    <a-button danger :disabled="!canDeviceBatchAction('delete') || !selectedIds.length || busy" @click="batchRemove">{{ t('Instance.index.133466-35') }}</a-button>
 					    </template>
 					    <a-button v-if="spaceAreaSupported !== false" :disabled="!selectedIds.length || busy || spaceAreaSupported !== true" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
 					    <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
@@ -269,9 +269,7 @@ function canDeviceBatchAction(action: 'add' | 'delete' | 'enable' | 'export' | '
   )
 }
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, tableParams, tableRequest, clearBatchSelection } = useUnifiedDeviceList()
-const hasBatchMenu = computed(() => activeType.value === 'gateway'
-  || canDeviceBatchAction('export') || (!isSaaS && canDeviceBatchAction('import'))
-  || canDeviceBatchAction('enable') || canDeviceBatchAction('syncStatus'))
+const canConfigureGatewayPlugins = computed(() => authStore.hasPermission('iot-user-device-list:update'))
 const channelSupported = useDeviceListChannelSupport(activeProvider)
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
@@ -304,7 +302,7 @@ function formatBrandModel(value?: string) {
     ? normalized
     : t('IotDeviceDetail.common.unconfigured')
 }
-const { projectId, editing, editOpen, initialProductId, productOnboardingDeviceCreation, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, batchRemove, assignAreaOpen, assignGroupOpen, assignArea, assignGroup, deviceImportOpen, deviceImportProductId, productOnboardingDeviceImport, openDeviceImport, enableOnboardedDeviceAndOpenAccess } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider)
+const { projectId, editing, editOpen, initialProductId, productOnboardingDeviceCreation, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, batchRemove, assignAreaOpen, assignGroupOpen, assignArea, assignGroup, deviceImportOpen, deviceImportProductId, productOnboardingDeviceImport, openDeviceImport, enableOnboardedDeviceAndOpenAccess } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider, canDeviceBatchAction)
 const { openBatchPage } = useUnifiedDeviceBatchNavigation({ selected, searchTerms, filterFields, syncGatewayStatus })
 const configurationRequest = ref(0)
 
@@ -396,6 +394,7 @@ function handleBatchMenuClick({ key }: { key: string | number }) {
     Modal.confirm({ title: t('Instance.index.133466-33'), onOk: activateAllDevices })
     return
   }
+  if (key === 'plugins' && (activeType.value !== 'gateway' || !canConfigureGatewayPlugins.value)) return
   openBatchPage({ key })
 }
 function handleDeviceImportSaved() {
