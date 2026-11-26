@@ -1,26 +1,40 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import ts from 'typescript'
 
 const source = await readFile(new URL('../views/device/list/unified/index.vue', import.meta.url), 'utf8')
 const actionsSource = await readFile(new URL('../views/device/list/unified/useUnifiedDeviceActions.ts', import.meta.url), 'utf8')
 const listSource = await readFile(new URL('../views/device/list/unified/useUnifiedDeviceList.ts', import.meta.url), 'utf8')
 
-test('batch enable and disable are available whenever devices are selected', () => {
-  const batchActions = source.match(/<template v-else>[\s\S]*?<\/template>/)?.[0] || ''
-  assert.match(batchActions, /batchToggle\('enable'\)/)
-  assert.match(batchActions, /batchToggle\('disable'\)/)
-  assert.doesNotMatch(batchActions, /selected\.every\(device => allowed\(device, '(enable|disable)'\)\)/)
-  assert.match(batchActions, /:disabled="!selectedIds\.length \|\| busy"/)
+const permissionCheck = source.match(/function canDeviceBatchAction[\s\S]*?\n}/)[0]
+const makePermissionCheck = (grants, code = 'iot-user-device-list') => {
+  const js = ts.transpileModule(permissionCheck, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText
+  return new Function('deviceMenuCode', 'authStore', `${js}; return canDeviceBatchAction`)(
+    { value: code }, { hasPermission: permission => grants.includes(permission) },
+  )
+}
+
+test('query-only users cannot use the create or batch operations', () => {
+  const can = makePermissionCheck(['iot-user-device-list:view'])
+  for (const action of ['add', 'delete', 'export', 'import', 'enable', 'syncStatus']) {
+    assert.equal(can(action), false, action)
+  }
+  assert.match(source, /canDeviceBatchAction\('add'\).*type="primary"/)
+  assert.match(source, /v-if="canDeviceBatchAction\('syncStatus'\)" key="syncStatus"/)
+  for (const action of ['enable', 'disable']) {
+    assert.ok(source.includes(`v-if="canDeviceBatchAction('enable')" :disabled="!selectedIds.length || busy" @click="batchToggle('${action}')"`))
+  }
 })
 
-test('batch menu accepts the resource-center root, device child, and legacy menu grants', () => {
-  assert.match(source, /function canDeviceBatchAction\(action: 'delete' \| 'enable' \| 'export' \| 'import'\)/)
-  assert.match(source, /\[deviceMenuCode\.value, 'iot-user-device-list', 'iot-user\/device\/list', 'device\/Instance'\]/)
-  assert.match(source, /action === 'enable' \? \['enable', 'action'\] : \[action\]/)
-  assert.match(source, /return menu\.hasMenu\(deviceMenuCode\.value\)/)
-  assert.match(source, /v-if="!isSaaS && canDeviceBatchAction\('import'\)"/)
-  assert.match(source, /v-if="canDeviceBatchAction\('enable'\)" key="activateAll"/)
+test('explicit grants keep their individual operations across menu aliases', () => {
+  const can = makePermissionCheck(['device/Instance:export', 'iot-user/device/list:action'])
+  assert.equal(can('export'), true)
+  assert.equal(can('enable'), true)
+  assert.equal(can('syncStatus'), true)
+  assert.equal(can('import'), false)
+  assert.equal(can('add'), false)
+  assert.equal(makePermissionCheck(['iot-user-device-list:enable'])('syncStatus'), false)
 })
 
 test('shows device actions through each category list-menu permission', () => {

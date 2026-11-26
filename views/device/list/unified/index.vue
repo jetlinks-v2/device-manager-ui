@@ -2,7 +2,7 @@
   <!-- 卡片切换充当面板顶栏：flush 让它与布局面板贴合，左上角一起拉平。 -->
 
   <DefineEmptyCreateAction1>
-    <a-button v-if="activeType === 'all' || isIotEntry" type="primary" :disabled="busy" @click="openCreateDrawer">
+    <a-button v-if="(activeType === 'all' || isIotEntry) && canDeviceBatchAction('add')" type="primary" :disabled="busy" @click="openCreateDrawer">
      <template #icon><AIcon type="PlusOutlined" /></template>
      {{ t('IotDeviceList.action.create') }}
     </a-button>
@@ -45,7 +45,7 @@
 						    <a-divider type="vertical" class="unified-device-list__action-divider" />
 						    <EmptyCreateButtonAction1 v-if="activeType === 'all' || isIotEntry" />
 						    <EmptyCreateButtonAction2 v-if="activeProvider?.create" />
-						    <a-dropdown>
+						    <a-dropdown v-if="hasBatchMenu">
 						      <a-button>
 						        {{ t('UnifiedDeviceList.batch') }}
 						        <AIcon type="DownOutlined" />
@@ -57,7 +57,7 @@
 					          <a-menu-item v-if="canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
 						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}<DocumentHelp code="iot-user-device-list" help-key="batch.algorithms" /></a-menu-item>
 						          <a-menu-item v-if="activeType === 'gateway'" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}<DocumentHelp code="iot-user-device-list" help-key="batch.plugins" /></a-menu-item>
-						          <a-menu-item key="syncStatus">
+						          <a-menu-item v-if="canDeviceBatchAction('syncStatus')" key="syncStatus">
                         {{ t('IotDeviceList.action.syncStatus') }}
                         <DocumentHelp code="iot-user-device-list" help-key="batch.syncStatus" />
                       </a-menu-item>
@@ -70,8 +70,8 @@
 					    <span>{{ t('IotDeviceList.toolbar.selected', { selected: selectedIds.length }) }}</span>
 					    <component v-if="activeProvider?.batchComponent" :is="activeProvider.batchComponent" :devices="rows" :selected-ids="selectedIds" @changed="handleBatchChanged" />
 					    <template v-else>
-					    <a-button :disabled="!selectedIds.length || busy" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
-					    <a-button :disabled="!selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
+					    <a-button v-if="canDeviceBatchAction('enable')" :disabled="!selectedIds.length || busy" @click="batchToggle('enable')">{{ t('IotDeviceList.action.batchEnable') }}</a-button>
+					    <a-button v-if="canDeviceBatchAction('enable')" :disabled="!selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
 					    <a-button v-if="canDeviceBatchAction('delete')" danger :disabled="!selectedIds.length || busy" @click="batchRemove">{{ t('Instance.index.133466-35') }}</a-button>
 					    </template>
 					    <a-button v-if="spaceAreaSupported !== false" :disabled="!selectedIds.length || busy || spaceAreaSupported !== true" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
@@ -260,23 +260,18 @@ const guideProjectId = computed(() => resolveIotProjectId(route, ''))
 const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
 const authStore = useAuthStore()
-/**
- * The resource-center root and its device child both host this view, so deployments may return either menu code.
- * The server declares “enable” separately; old menus used the combined “action” button.
- */
-function canDeviceBatchAction(action: 'delete' | 'enable' | 'export' | 'import') {
+// 兼容历史菜单编码，但菜单访问不能代替操作按钮授权。
+function canDeviceBatchAction(action: 'add' | 'delete' | 'enable' | 'export' | 'import' | 'syncStatus') {
   const menuCodes = new Set([deviceMenuCode.value, 'iot-user-device-list', 'iot-user/device/list', 'device/Instance'])
-  const actionCodes = action === 'enable' ? ['enable', 'action'] : [action]
-
-  const hasButtonPermission = actionCodes.some((actionCode) =>
-    [...menuCodes].some((menuCode) => authStore.hasPermission(`${menuCode}:${actionCode}`)),
+  const actionCodes = action === 'enable' ? ['enable', 'action'] : [action === 'syncStatus' ? 'action' : action]
+  return actionCodes.some(actionCode =>
+    [...menuCodes].some(menuCode => authStore.hasPermission(`${menuCode}:${actionCode}`)),
   )
-  if (hasButtonPermission) return true
-
-  // 已部署的资源中心菜单可能还没有导入、导出和启用这三个按钮节点；列表菜单本身仍是该组批量操作的授权边界。
-  return menu.hasMenu(deviceMenuCode.value)
 }
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, tableParams, tableRequest, clearBatchSelection } = useUnifiedDeviceList()
+const hasBatchMenu = computed(() => activeType.value === 'gateway'
+  || canDeviceBatchAction('export') || (!isSaaS && canDeviceBatchAction('import'))
+  || canDeviceBatchAction('enable') || canDeviceBatchAction('syncStatus'))
 const channelSupported = useDeviceListChannelSupport(activeProvider)
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
 const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
@@ -346,7 +341,7 @@ const bulkProcessType = ref<'active' | 'sync'>('sync')
 const deviceExportOpen = ref(false)
 const bulkQuery = computed(() => ({ terms: [...baseTerms.value, ...filterTerms.value] }))
 function syncGatewayStatus() {
-  if (syncVisible.value) return
+  if (!canDeviceBatchAction('syncStatus') || syncVisible.value) return
   const terms = [...baseTerms.value, ...filterTerms.value]
   syncData.value = { terms }
   bulkProcessType.value = 'sync'
@@ -356,7 +351,7 @@ function syncGatewayStatus() {
   syncVisible.value = true
 }
 function activateAllDevices() {
-  if (syncVisible.value) return
+  if (!canDeviceBatchAction('enable') || syncVisible.value) return
   const terms = [...baseTerms.value, ...filterTerms.value]
   syncData.value = { terms }
   bulkProcessType.value = 'active'
@@ -387,14 +382,17 @@ function handleBatchChanged() {
 }
 function handleBatchMenuClick({ key }: { key: string | number }) {
   if (key === 'export') {
+    if (!canDeviceBatchAction('export')) return
     deviceExportOpen.value = true
     return
   }
   if (key === 'import') {
+    if (isSaaS || !canDeviceBatchAction('import')) return
     openDeviceImport()
     return
   }
   if (key === 'activateAll') {
+    if (!canDeviceBatchAction('enable')) return
     Modal.confirm({ title: t('Instance.index.133466-33'), onOk: activateAllDevices })
     return
   }
@@ -410,6 +408,7 @@ const { deleteGroup, groupDialogError, groupDialogMode, groupDialogOpen, groupEd
 
 // Use the actual button's availability; opening guidance must never overwrite another form.
 function openCreateDrawer() {
+  if (!canDeviceBatchAction('add')) return false
   if (busy.value || createEntry.value || detailDevice.value || assignAreaOpen.value || assignGroupOpen.value || groupDialogOpen.value || syncVisible.value) return false
   if (editOpen.value) return !editing.value
   if (activeType.value !== 'all' && !isIotEntry.value) return false
