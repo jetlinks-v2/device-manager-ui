@@ -28,7 +28,7 @@
         </a-alert>
         <JProTable ref="tableRef" :key="table.key" mode="CARD" row-key="id" :request="table.request"
           :grid-columns="[1, 2, 3, 3]" :alert-show="false" :body-style="{ padding: 0 }">
-          <template #card="record"><DeviceAlarmRecordCard :row="record" :levels="levels" :now="now.getTime()" :device-link="false"
+          <template #card="record"><DeviceAlarmRecordCard :row="record" :levels="levels" :now="now.getTime()" :device-link="false" :can-handle="canHandle"
             @handle="handling.show" @history="history.show" /></template>
         </JProTable>
       </section>
@@ -38,7 +38,7 @@
       <DeviceAlarmHistory :state="history.history" :range="history.range" :rule-key="history.selectedRecord?.id || ''"
         @tab="history.changeTab" @range="history.changeRange" @page="history.changePage" @retry="history.loadHistory" />
     </a-modal>
-    <DeviceAlarmHandleModal :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
+    <DeviceAlarmHandleModal v-if="canHandle" :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
   </FullPage>
 </template>
 <script setup lang="ts">
@@ -51,6 +51,7 @@ import DeviceAlarmRecordCard from '../../../alarm/components/DeviceAlarmRecordCa
 import DeviceAlarmHistory from '../../../alarm/components/DeviceAlarmHistory.vue'
 import DeviceAlarmHandleModal from '../../../alarm/components/DeviceAlarmHandleModal.vue'
 import { useDeviceAlarmRecords } from '../../../alarm/hooks/useDeviceAlarmRecords'
+import { useDeviceAlarmPermissions } from '../../../alarm/hooks/useDeviceAlarmPermissions'
 import { useDeviceAlarmHandling } from '../../../alarm/hooks/useDeviceAlarmHandling'
 import { useDeviceAlarmHistory } from '../../../alarm/hooks/useDeviceAlarmHistory'
 import { useOverviewConfiguration } from '../../../../../visDashboard/DeviceDetail/hooks/useOverviewConfiguration'
@@ -62,7 +63,8 @@ const deviceId = computed(() => props.device.id)
 const { rows, levels, filtered, keyword, selectedId, loading, error, counts, countsError, load, refreshCounts } = useDeviceAlarmDetail(toRef(props, 'device'))
 const { tableRef, table, error: recordError, fields, terms, search, reload } = useDeviceAlarmRecords(selectedId, $t, deviceId)
 const history = reactive(useDeviceAlarmHistory())
-const handling = reactive(useDeviceAlarmHandling($t, async () => { await Promise.all([reload(), refreshCounts()]) }))
+const { canHandle } = useDeviceAlarmPermissions()
+const handling = reactive(useDeviceAlarmHandling($t, async () => { await Promise.all([reload(), refreshCounts()]) }, () => canHandle.value))
 const now = useNow({ interval: 30000 })
 const { canConfigureAlarms, configureAlarms } = useOverviewConfiguration(deviceId, computed(() => false))
 </script>

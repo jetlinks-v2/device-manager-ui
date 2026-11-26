@@ -1,5 +1,6 @@
-import { onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { message } from 'ant-design-vue'
+import { useDeviceAlarmPermissions } from './useDeviceAlarmPermissions'
 import { useDeviceAlarmRuleSearch } from './useDeviceAlarmRuleSearch'
 import { usePropertyUnits } from './usePropertyUnits'
 import {
@@ -41,6 +42,7 @@ import { defaultCondition, isAlarmProperty, validateAlarmConditions } from '../c
 import { loadRules, saveRule } from '../../components/PropertyRules/service'
 
 export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unknown>) => string) {
+  const permissions = useDeviceAlarmPermissions()
   usePropertyUnits()
   const saving = ref(false)
   const loading = ref(false)
@@ -66,6 +68,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   // The editor stays mounted after close; use this key to refresh product options for every open.
   const productReloadKey = ref(0)
   const editingRow = ref<DeviceAlarmRow | null>(null)
+  // 新增和编辑共用弹窗，提交时按当前会话重新校验各自的按钮授权。
+  const canSave = computed(() => editingRow.value ? permissions.canUpdate.value : permissions.canAdd.value)
   const selectedProductOption = ref<DeviceAlarmTargetOption>()
   const selectedDeviceOption = ref<DeviceAlarmTargetOption>()
 
@@ -193,6 +197,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function openCreate() {
+    if (!permissions.canAdd.value) return
     propertyRequestSequence += 1
     editingRow.value = null
     form.value = createEmptyForm()
@@ -205,6 +210,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function openEdit(row: DeviceAlarmRow) {
+    if (!permissions.canUpdate.value) return
     if (!parseRule(row.raw).editable) { message.warning(t('PropertyRules.readonly')); return }
     editingRow.value = row
     form.value = {
@@ -262,7 +268,7 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function save() {
-    if (saving.value) return
+    if (saving.value || !canSave.value) return
     const current = form.value
     const error = validateForm(current)
     if (error) {
@@ -279,6 +285,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
       const loaded = await loadRules(scope, current.property)
       const raw = loaded.device[0] ?? loaded.product[0]
       if (!parseRule(raw).editable) { message.warning(t('PropertyRules.readonly')); return }
+      // 规则读取期间可能刷新角色授权，写入前以最新权限为准。
+      if (!canSave.value) return
       await saveRule(scope, current.property, replaceAlarm(raw, current))
       message.success(t('DeviceAlarm.message.saveSuccess', { name: current.name }))
       editorOpen.value = false
@@ -328,10 +336,12 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
   }
 
   async function remove(row: DeviceAlarmRow) {
+    if (!permissions.canDelete.value) return
     const scope = { productId: String(row.productId), deviceId: row.source === 'device' ? row.deviceId : undefined }
     const loaded = await loadRules(scope, row.property)
     const raw = loaded.device[0] ?? loaded.product[0]
     if (!parseRule(raw).editable) { message.warning(t('PropertyRules.readonly')); return }
+    if (!permissions.canDelete.value) return
     await saveRule(scope, row.property, replaceAlarm(raw))
     message.success(t('DeviceAlarm.message.deleteSuccess', { name: row.name }))
     await refresh()
@@ -454,6 +464,8 @@ export function useDeviceAlarmPage(t: (key: string, params?: Record<string, unkn
     propertyOptions,
     selectedProductOption,
     selectedDeviceOption,
+    ...permissions,
+    canSave,
     notifyMethods,
     notifyLoading,
     notifyFailed,

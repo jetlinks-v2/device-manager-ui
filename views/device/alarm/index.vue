@@ -35,7 +35,7 @@
               <div v-else class="alarm-scroll" @scroll.passive="onRuleScroll">
                 <a-spin :spinning="loading">
                   <DeviceAlarmRuleCard v-for="row in rows" :key="row.key" :row="row" :selected="selected?.id === row.id"
-                                       :levels="levelOptions" :active-count="row.id ? activeCounts?.[row.id] : undefined" :busy="busy"
+                                       :can-edit="canUpdate" :can-remove="canDelete" :levels="levelOptions" :active-count="row.id ? activeCounts?.[row.id] : undefined" :busy="busy"
                                        @select="select" @edit="item => run(() => openEdit(item))" @remove="confirmRemove" />
                   <CloudEmpty v-if="!rows.length && !loading" :description="$t('DeviceAlarm.empty')" />
                   <div v-if="rows.length" class="alarm-rule-more">
@@ -50,7 +50,7 @@
               </div>
               <footer class="alarm-rule-footer">
                 <!-- 操作互斥由 create 内的 run 保证，避免编辑时联动禁用样式导致闪烁。 -->
-                <a-button block class="alarm-rule-create" :loading="creating" @click="create">
+                <a-button v-if="canAdd" block class="alarm-rule-create" :loading="creating" @click="create">
                   <template #icon><AIcon type="PlusOutlined" /></template>
                   {{ $t('DeviceAlarm.action.create') }}
                 </a-button>
@@ -65,7 +65,7 @@
               <JProTable ref="recordTableRef" :key="recordTable.key" class="alarm-record-table" mode="CARD" row-key="id"
                          :request="recordTable.request" :grid-columns="[1, 2, 3, 3]" :alert-show="false" :body-style="{ padding: 0 }">
                 <template #card="record">
-                  <DeviceAlarmRecordCard :row="record" :levels="levelOptions" :now="now.getTime()"
+                  <DeviceAlarmRecordCard :row="record" :levels="levelOptions" :now="now.getTime()" :can-handle="canHandle"
                                          @handle="handling.show" @history="history.show" @device-alarm="openDeviceAlarm" />
                 </template>
               </JProTable>
@@ -80,8 +80,8 @@
         <DeviceAlarmHistory :state="history.history" :range="history.range" :rule-key="history.selectedRecord?.id || ''"
           @tab="history.changeTab" @range="history.changeRange" @page="history.changePage" @retry="history.loadHistory" />
       </a-modal>
-      <DeviceAlarmHandleModal :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
-      <DeviceAlarmEditorModal v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)" :saving="saving"
+      <DeviceAlarmHandleModal v-if="canHandle" :state="handling" @description="value => handling.description = value" @close="handling.close" @submit="handling.submit" />
+      <DeviceAlarmEditorModal v-if="canSave" v-model:open="editorOpen" :model="form" :readonly-scope="Boolean(editingRow)" :saving="saving"
         :level-options="levelOptions" :product-option="selectedProductOption"
         :device-option="selectedDeviceOption" :product-request="requestProducts" :device-request="requestDevices"
         :property-options="propertyOptions" :notify-methods="notifyMethods" :notify-loading="notifyLoading" :notify-failed="notifyFailed"
@@ -120,7 +120,7 @@ const { page, selected, ruleId, activeCounts, statusError, listError, loading, b
   loadingMore, loadMoreError, hasMore, load, loadCounts, loadMore, select, showAllRecords, remove, run, create } = useDeviceAlarmWorkspace($t)
 const { rows, total, keyword, levelOptions, propertyOptions,
   selectedProductOption, selectedDeviceOption, notifyMethods, notifyLoading, notifyFailed, loadNotifyResources, editorOpen, saving, productReloadKey,
-  editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
+  canAdd, canUpdate, canDelete, canHandle, canSave, editingRow, form, updateKeyword, handleSearch, openEdit, requestProducts, requestDevices,
   onProductChange, onDeviceChange, onPropertyChange, save } = page
 const { tableRef: recordTableRef, table: recordTable, error: recordsError, fields: recordFields, terms: recordTerms,
   search: searchRecords, reload: loadRecords } = useDeviceAlarmRecords(ruleId, $t)
@@ -128,7 +128,7 @@ const history = reactive(useDeviceAlarmHistory())
 const handling = reactive(useDeviceAlarmHandling($t, async record => {
   message.success($t('DeviceAlarm.workspace.handledSuccess', { name: record.alarmName || '—' }))
   await Promise.all([loadRecords(), loadCounts()])
-}))
+}, () => canHandle.value))
 const now = useNow({ interval: 1000 })
 let routeRecordId = ''
 
@@ -181,6 +181,7 @@ function onRuleScroll(event: Event) {
 }
 
 function confirmRemove(row: DeviceAlarmRow) {
+  if (!canDelete.value) return
   Modal.confirm({
     title: $t('DeviceAlarm.confirm.delete', { name: row.name }),
     okText: $t('DeviceAlarm.action.delete'),

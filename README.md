@@ -4,6 +4,25 @@
 
 物联告警菜单的数据权限由 `baseMenu.json` 声明，`iot` 和 `app` 两个入口的 `assetTypes` 均需包含 `user`，以支持通知对象的用户资产授权。更新定义后需同步已保存的菜单，并在角色或应用授权中配置用户资产范围；设备的“自己创建的”权限不会自动限制用户列表。验收时使用受限账号核对 `/user/detail/_query` 返回的通知对象范围，JSON 配置检查不能替代部署后的权限验证。
 
+## 物联告警按钮权限
+
+`baseMenu.json` 为 `iot-user/device/alarm` 的 `iot`、`app` 两个入口定义以下按钮；菜单本身仅保留查询权限，日志和处理记录沿用查询授权。
+
+| 按钮 | ID | 接口资源授权 |
+| --- | --- | --- |
+| 新增 | `add` | `device-product:save`、`device-instance:save` |
+| 编辑 | `update` | `device-product:save`、`device-instance:save` |
+| 删除 | `delete` | `device-product:save`、`device-instance:save` |
+| 处理告警 | `handle` | `alarm-record:save` |
+
+`views/device/alarm/hooks/useDeviceAlarmPermissions.ts` 复用 auth store，以 `iot-user/device/alarm:<按钮 ID>` 校验操作授权，不以菜单可见性或设备编辑权限代替。`useDeviceAlarmPage.ts` 保护编辑器入口及保存、删除提交，`useDeviceAlarmHandling.ts` 保护处理弹窗和提交；异步读取规则后会再次检查写权限。`views/device/list/components/device-detail/IotDeviceAlarmWorkspace.vue` 的处理按钮使用相同授权。页面布局及后端接口保持原有行为。
+
+删除告警规则是修改属性预处理配置，因此沿用产品/设备 `save` 权限，不授予产品/设备 `delete` 权限。本次区分的是前端按钮授权；新增、编辑、删除仍共享后端现有的保存动作。已有菜单需同步定义并重新配置角色或应用按钮权限，否则前端不会放行未授权操作。
+
+运行时初始化入口是 `runtime-ui/jetlinks-web-core/src/views/init-home/Menu/index.vue`：它通过 `src/utils/modules.ts` 加载同一工作区的 `modules/*/baseMenu.ts`，再按后端支持的资源过滤并提交菜单。运营端 `ui/` 的同名模块不会参与这条初始化链路。使用更新后的运行时前端刷新或部署，再重新初始化菜单并配置按钮授权。
+
+验证：在本模块使用 Node.js 22.18.0 执行 `node scripts/test-alarm-workspace.mjs`，244 项检查通过，包括两个入口的按钮定义、运行时初始化页面的真实权限过滤、四项独立授权、只读访问及授权撤销后的提交拦截。Git 差异空白检查通过。在 `runtime-ui/jetlinks-web-core/` 使用 Node.js 22.18.0 执行 `node --max_old_space_size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-runtime-alarm-permissions-build -- --module-name device-manager-ui`，构建通过（13,208 个模块），输出仍有资源路径、Rollup 输出配置、循环依赖与大 chunk 警告；构建生成的本模块 `dist/baseMenu.json` 已核对，两个物联告警入口均包含 4 项按钮。未进行浏览器初始化或受限账号验收。本工作区没有独立 lint 和样式检查脚本，本次不改样式。全量类型检查未执行；待执行命令（在 `runtime-ui/`）：`pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`。
+
 ## 设备树与接入列表
 
 `views/device/list/components/IotDeviceScopeSidebar.vue` 使用 core 的 `AutoTree` 自动适配侧栏高度并启用虚拟滚动，保留原有树属性、插槽和选择事件。该入口依赖 [core PR #224](https://github.com/jetlinks-v2/jetlinks-web-core/pull/224)；异步页面首次挂载的滚轮绑定还依赖运行时工作区的 `patches/ant-design-vue@4.2.6.patch`，发布时需同步交付。

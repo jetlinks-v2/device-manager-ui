@@ -2309,17 +2309,13 @@
               {
                 "permission": "device-instance",
                 "actions": [
-                  "query",
-                  "save",
-                  "delete"
+                  "query"
                 ]
               },
               {
                 "permission": "device-product",
                 "actions": [
-                  "query",
-                  "save",
-                  "delete"
+                  "query"
                 ]
               },
               {
@@ -2349,8 +2345,7 @@
               {
                 "permission": "alarm-record",
                 "actions": [
-                  "query",
-                  "save"
+                  "query"
                 ]
               },
               {
@@ -2362,8 +2357,7 @@
               {
                 "permission": "notify-channel",
                 "actions": [
-                  "query",
-                  "save"
+                  "query"
                 ]
               },
               {
@@ -2376,6 +2370,102 @@
                 "permission": "notifier",
                 "actions": [
                   "query"
+                ]
+              }
+            ],
+            "buttons": [
+              {
+                "id": "add",
+                "name": "新增",
+                "i18nMessages": {
+                  "zh_CN": "新增",
+                  "en_US": "Add",
+                  "en": "Add",
+                  "ja": "追加",
+                  "ja_JP": "追加"
+                },
+                "permissions": [
+                  {
+                    "permission": "device-product",
+                    "actions": [
+                      "save"
+                    ]
+                  },
+                  {
+                    "permission": "device-instance",
+                    "actions": [
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "update",
+                "name": "编辑",
+                "i18nMessages": {
+                  "zh_CN": "编辑",
+                  "en_US": "Edit",
+                  "en": "Edit",
+                  "ja": "編集",
+                  "ja_JP": "編集"
+                },
+                "permissions": [
+                  {
+                    "permission": "device-product",
+                    "actions": [
+                      "save"
+                    ]
+                  },
+                  {
+                    "permission": "device-instance",
+                    "actions": [
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "delete",
+                "name": "删除",
+                "i18nMessages": {
+                  "zh_CN": "删除",
+                  "en_US": "Delete",
+                  "en": "Delete",
+                  "ja": "削除",
+                  "ja_JP": "削除"
+                },
+                "permissions": [
+                  {
+                    "permission": "device-product",
+                    "actions": [
+                      "save"
+                    ]
+                  },
+                  {
+                    "permission": "device-instance",
+                    "actions": [
+                      "save"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "handle",
+                "name": "处理告警",
+                "i18nMessages": {
+                  "zh_CN": "处理告警",
+                  "en_US": "Handle alarm",
+                  "en": "Handle alarm",
+                  "ja": "アラーム処理",
+                  "ja_JP": "アラーム処理"
+                },
+                "permissions": [
+                  {
+                    "permission": "alarm-record",
+                    "actions": [
+                      "save"
+                    ]
+                  }
                 ]
               }
             ]
@@ -2442,17 +2532,13 @@
           {
             "permission": "device-instance",
             "actions": [
-              "query",
-              "save",
-              "delete"
+              "query"
             ]
           },
           {
             "permission": "device-product",
             "actions": [
-              "query",
-              "save",
-              "delete"
+              "query"
             ]
           },
           {
@@ -2482,8 +2568,7 @@
           {
             "permission": "alarm-record",
             "actions": [
-              "query",
-              "save"
+              "query"
             ]
           },
           {
@@ -2495,8 +2580,7 @@
           {
             "permission": "notify-channel",
             "actions": [
-              "query",
-              "save"
+              "query"
             ]
           },
           {
@@ -2509,6 +2593,102 @@
             "permission": "notifier",
             "actions": [
               "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "add",
+            "name": "新增",
+            "i18nMessages": {
+              "zh_CN": "新增",
+              "en_US": "Add",
+              "en": "Add",
+              "ja": "追加",
+              "ja_JP": "追加"
+            },
+            "permissions": [
+              {
+                "permission": "device-product",
+                "actions": [
+                  "save"
+                ]
+              },
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "save"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "update",
+            "name": "编辑",
+            "i18nMessages": {
+              "zh_CN": "编辑",
+              "en_US": "Edit",
+              "en": "Edit",
+              "ja": "編集",
+              "ja_JP": "編集"
+            },
+            "permissions": [
+              {
+                "permission": "device-product",
+                "actions": [
+                  "save"
+                ]
+              },
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "save"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "delete",
+            "name": "删除",
+            "i18nMessages": {
+              "zh_CN": "删除",
+              "en_US": "Delete",
+              "en": "Delete",
+              "ja": "削除",
+              "ja_JP": "削除"
+            },
+            "permissions": [
+              {
+                "permission": "device-product",
+                "actions": [
+                  "save"
+                ]
+              },
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "save"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "handle",
+            "name": "处理告警",
+            "i18nMessages": {
+              "zh_CN": "处理告警",
+              "en_US": "Handle alarm",
+              "en": "Handle alarm",
+              "ja": "アラーム処理",
+              "ja_JP": "アラーム処理"
+            },
+            "permissions": [
+              {
+                "permission": "alarm-record",
+                "actions": [
+                  "save"
+                ]
+              }
             ]
           }
         ]

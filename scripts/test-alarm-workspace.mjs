@@ -39,6 +39,7 @@ try {
     path.join(output, 'propertyUnits.test.mjs'),
     path.join(output, 'notificationMessage.test.mjs'),
     path.join(root, 'tests/alarmWorkspaceView.test.mjs'),
+    path.join(root, 'tests/alarmButtonMenuPermissions.test.mjs'),
   ], { stdio: 'inherit' }).status ?? 1
 } finally {
   const resolved = path.resolve(output)
