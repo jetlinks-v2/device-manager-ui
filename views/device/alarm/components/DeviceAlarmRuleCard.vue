@@ -13,18 +13,18 @@
         </span>
       </span>
     </button>
-    <a-dropdown v-if="!readonly" :trigger="['click']" placement="bottomRight" :disabled="busy">
+    <a-dropdown v-if="!readonly && (canEdit || canRemove)" :trigger="['click']" placement="bottomRight" :disabled="busy">
       <a-button class="alarm-rule__more" type="text" size="small" :disabled="busy"
                 :aria-label="$t('DeviceAlarm.action.more', { name: row.name })" @click.stop>
         <AIcon type="MoreOutlined" />
       </a-button>
       <template #overlay>
         <a-menu>
-          <a-menu-item key="edit" @click="emit('edit', row)">
+          <a-menu-item v-if="canEdit" key="edit" @click="emit('edit', row)">
             <AIcon type="FormOutlined" aria-hidden="true" />
             {{ $t('DeviceAlarm.action.edit') }}
           </a-menu-item>
-          <a-menu-item key="remove" danger @click="emit('remove', row)">
+          <a-menu-item v-if="canRemove" key="remove" danger @click="emit('remove', row)">
             <AIcon type="DeleteOutlined" aria-hidden="true" />
             {{ $t('DeviceAlarm.action.delete') }}
           </a-menu-item>
@@ -46,6 +46,8 @@ const props = defineProps<{
   selected: boolean
   levels: AlarmLevelOption[]
   activeCount?: number
+  canEdit?: boolean
+  canRemove?: boolean
   readonly?: boolean
   busy?: boolean
 }>()

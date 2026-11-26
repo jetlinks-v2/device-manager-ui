@@ -37,7 +37,7 @@
             <DocumentHelp code="iot-user/device/alarm" help-key="history.handles" />
           </span>
         </div>
-        <a-button type="primary" :disabled="!canHandleRecord(row)" @click="emit('handle', row)">
+        <a-button v-if="canHandle" type="primary" :disabled="!canHandleRecord(row)" @click="emit('handle', row)">
           {{ $t('DeviceAlarm.workspace.handle') }}
         </a-button>
       </div>
@@ -57,7 +57,7 @@ import { alarmDeviceId, alarmDuration, canHandleRecord } from '../workspaceUtils
 import type { AlarmLevelOption } from '../types'
 import type { DeviceAlarmEvent, HistoryTab } from '../workspaceTypes'
 
-const props = defineProps<{ row: DeviceAlarmEvent; levels: AlarmLevelOption[]; now: number; deviceLink?: boolean }>()
+const props = defineProps<{ row: DeviceAlarmEvent; levels: AlarmLevelOption[]; now: number; canHandle: boolean; deviceLink?: boolean }>()
 const emit = defineEmits<{
   (event: 'handle', record: DeviceAlarmEvent): void
   (event: 'history', record: DeviceAlarmEvent, tab: HistoryTab): void

@@ -37,6 +37,9 @@ import { localizeDeviceLibraryPreprocessors } from '../views/device/alarm/device
 import { queryDeviceAlarmNotifyMethods, toNotifyMethods } from '../views/device/alarm/api'
 import { aggregateTemplateState, hasTemplateBinding, verifiedTemplateState } from '../views/device/alarm/notificationTemplateStatus'
 import { useAlarmNotification } from '../views/device/alarm/hooks/useAlarmNotification'
+import { rulePermissionState } from './propertyRuleScope.test-shim'
+import { useDeviceAlarmPermissions } from '../views/device/alarm/hooks/useDeviceAlarmPermissions'
+import { useDeviceAlarmHandling } from '../views/device/alarm/hooks/useDeviceAlarmHandling'
 import { useDeviceAlarmPage } from '../views/device/alarm/hooks/useDeviceAlarmPage'
 import type { DeviceAlarmRow, DeviceAlarmTargetOption } from '../views/device/alarm/types'
 
@@ -1546,4 +1549,112 @@ test('recipient rows keep names and usernames distinct for duplicate names, miss
     await cache.load(['u1'])
     assert.equal(cache.options.value.get('u1')?.description, 'chen.xiaoyu')
   } finally { unmount() }
+})
+
+
+test('alarm button grants remain independent and react to revocation', () => {
+  rulePermissionState.allowAll = false
+  rulePermissionState.granted = ['device/Instance:update', 'iot-user/device/list:update']
+  const permissions = useDeviceAlarmPermissions()
+  try {
+    assert.deepEqual(Object.values(permissions).map(value => value.value), [false, false, false, false])
+    for (const [action, key] of [['add', 'canAdd'], ['update', 'canUpdate'], ['delete', 'canDelete'], ['handle', 'canHandle']] as const) {
+      rulePermissionState.granted = [`iot-user/device/alarm:${action}`]
+      for (const [name, value] of Object.entries(permissions)) assert.equal(value.value, name === key)
+    }
+    rulePermissionState.granted = []
+    assert.deepEqual(Object.values(permissions).map(value => value.value), [false, false, false, false])
+  } finally { rulePermissionState.allowAll = true; rulePermissionState.granted = [] }
+})
+
+test('read-only alarm viewers cannot open rule editors or issue write requests', async () => {
+  rulePermissionState.allowAll = false
+  rulePermissionState.granted = []
+  const requests: string[] = []
+  setAlarmRequestHandler(async url => { requests.push(url); return { result: [] } })
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    await flush()
+    requests.length = 0
+    const row: DeviceAlarmRow = { ...state.form.value, key: 'rule', id: 'rule', productId: 'product-a', property: 'temperature' }
+    await state.openCreate()
+    await state.openEdit(row)
+    await state.remove(row)
+    await state.save()
+    assert.equal(state.editorOpen.value, false)
+    assert.deepEqual(requests, [])
+    rulePermissionState.granted = ['iot-user/device/alarm:add']
+    assert.equal(state.canSave.value, true)
+    state.editingRow.value = row
+    assert.equal(state.canSave.value, false)
+    rulePermissionState.granted = ['iot-user/device/alarm:update']
+    assert.equal(state.canSave.value, true)
+    state.editingRow.value = null
+    assert.equal(state.canSave.value, false)
+  } finally { unmount(); rulePermissionState.allowAll = true; rulePermissionState.granted = [] }
+})
+
+test('alarm handling checks authorization both before opening and before submitting', async () => {
+  rulePermissionState.allowAll = false
+  rulePermissionState.granted = []
+  const requests: string[] = []
+  let refreshed = 0
+  setAlarmRequestHandler(async url => { requests.push(url); return { status: 200 } })
+  const { state, unmount } = mount(() => {
+    const { canHandle } = useDeviceAlarmPermissions()
+    return useDeviceAlarmHandling(key => key, async () => { refreshed += 1 }, () => canHandle.value)
+  })
+  try {
+    const record = { id: 'record-a', alarmConfigId: 'rule-a', alarmTime: 1, state: 'warning' }
+    state.show(record)
+    assert.equal(state.record.value, undefined)
+    rulePermissionState.granted = ['iot-user/device/alarm:handle']
+    state.show(record)
+    assert.equal(state.record.value?.id, 'record-a')
+    state.description.value = '已处理'
+    rulePermissionState.granted = []
+    await state.submit()
+    assert.deepEqual(requests, [])
+    assert.equal(refreshed, 0)
+    rulePermissionState.granted = ['iot-user/device/alarm:handle']
+    await state.submit()
+    assert.deepEqual(requests, ['/alarm/record/device/_handle'])
+    assert.equal(refreshed, 1)
+    assert.equal(state.record.value, undefined)
+  } finally { unmount(); rulePermissionState.allowAll = true; rulePermissionState.granted = [] }
+})
+
+
+test('revoking edit or delete during rule loading prevents the pending write', async () => {
+  rulePermissionState.allowAll = false
+  const requests: { url: string; method: unknown }[] = []
+  const { state, unmount } = mount(() => useDeviceAlarmPage(key => key))
+  try {
+    const row: DeviceAlarmRow = { ...state.form.value, key: 'rule', id: 'rule', name: '温度告警', source: 'product',
+      productId: 'product-a', targetId: 'product-a', property: 'temperature', trigger: 'gt', value: 30,
+      notification: { ...state.form.value.notification, enabled: false } }
+    state.form.value = { ...row }
+    state.editingRow.value = row
+    for (const action of ['update', 'delete']) {
+      rulePermissionState.granted = [`iot-user/device/alarm:${action}`]
+      requests.length = 0
+      setAlarmRequestHandler(async (url, body) => {
+        requests.push({ url, method: body.method })
+        if (url.includes('/property/_list')) rulePermissionState.granted = []
+        return { result: [] }
+      })
+      if (action === 'update') await state.save()
+      else await state.remove(row)
+      assert.ok(requests.some(request => request.url.includes('/property/_list')))
+      assert.ok(requests.every(request => !['PUT', 'DELETE'].includes(String(request.method))))
+    }
+    // 删除独立授权可移除产品告警，不要求同时授予编辑按钮。
+    rulePermissionState.granted = ['iot-user/device/alarm:delete']
+    requests.length = 0
+    setAlarmRequestHandler(async (url, body) => { requests.push({ url, method: body.method }); return { result: [] } })
+    await state.remove(row)
+    assert.deepEqual(requests.filter(request => request.method === 'DELETE'), [
+      { url: '/message/preprocessor/product/product-a/property/temperature', method: 'DELETE' },
+    ])
+  } finally { unmount(); rulePermissionState.allowAll = true; rulePermissionState.granted = [] }
 })

@@ -11,7 +11,9 @@ export const useRouter = () => ({
   replace: async ({ query }: { query: Record<string, unknown> }) => { ruleRoute.query = query },
   afterEach: (handler: NavigationHookAfter) => { ruleRouteAfterEach.add(handler); return () => ruleRouteAfterEach.delete(handler) },
 })
-export const useAuthStore = () => ({ hasPermission: () => true })
+export const rulePermissionState = reactive({ allowAll: true, granted: [] as string[] })
+export const useAuthStore = () => ({ hasPermission: (codes: string | string[]) => rulePermissionState.allowAll
+  || (Array.isArray(codes) ? codes : [codes]).some(code => rulePermissionState.granted.includes(code)) })
 export const ruleSystem = reactive({ showThreshold: true })
 export const useSystemStore = () => ruleSystem
 export const ruleMenus = reactive(new Set<string>())

@@ -3,15 +3,16 @@ import { handleDeviceAlarm } from '../workspaceApi'
 import { canHandleRecord } from '../workspaceUtils'
 import type { DeviceAlarmEvent } from '../workspaceTypes'
 
+/** 工作区和设备详情共用处理流程，由入口提供当前告警处理授权。 */
 export function useDeviceAlarmHandling(t: (key: string, params?: Record<string, unknown>) => string,
-  onHandled: (record: DeviceAlarmEvent) => Promise<void>) {
+  onHandled: (record: DeviceAlarmEvent) => Promise<void>, canHandle: () => boolean) {
   const record = ref<DeviceAlarmEvent>()
   const description = ref('')
   const error = ref('')
   const busy = ref(false)
   let disposed = false
   function show(value: DeviceAlarmEvent) {
-    if (busy.value || !canHandleRecord(value)) return
+    if (!canHandle() || busy.value || !canHandleRecord(value)) return
     record.value = value
     description.value = ''
     error.value = ''
@@ -19,7 +20,8 @@ export function useDeviceAlarmHandling(t: (key: string, params?: Record<string, 
   function close() { if (!busy.value) record.value = undefined }
   async function submit() {
     const current = record.value
-    if (!current || busy.value) return
+    // 弹窗打开后授权可能改变，提交时再次校验，不能只依赖按钮显隐。
+    if (!canHandle() || !current || busy.value) return
     if (!description.value.trim() || description.value.trim().length > 200) {
       error.value = t('DeviceAlarm.workspace.handleValidation')
       return
