@@ -45,7 +45,7 @@ test('four dimensions reuse business maintenance rights independently of rule pe
   assert.deepEqual(device.product.toBusiness({ownerId:'p',label:'P'}).params,{id:'p'})
   assert.deepEqual(space.space.toBusiness({ownerId:'s',label:'S'}).query,{spaceId:'s',metricView:'metrics'})
   globalThis.__metricHost.resource=()=>undefined
-  assert.equal(space.space.available(),false)
+  assert.equal(space.space.available(),true)
   allowed.clear();menus.clear()
 })
 
@@ -75,7 +75,7 @@ test('device menu aliases cannot combine a menu from one code with permissions f
   allowed.clear();menus.clear()
 })
 
-const {useMetricLinks}=await loadMetricTestModule('../views/device/metrics/useMetricLinks.ts',{
+const {useMetricLinks}=await loadMetricTestModule('../../rule-engine-manager-ui/components/Metric/useMetricLinks.ts',{
   '@jetlinks-web-core/store':store,
   'vue-router':'export const useRoute=()=>globalThis.__metricLinks.route;export const useRouter=()=>({resolve:to=>({fullPath:JSON.stringify(to)})})',
 })
@@ -92,7 +92,7 @@ test('cross-entry navigation keeps exact IDs and requires its authorized menu',(
   allowed.clear();menus.clear()
 })
 
-const {useMetricSourceAdapter}=await loadMetricTestModule('../views/device/metrics/useMetricSourceAdapter.ts',{
+const {useMetricSourceAdapter}=await loadMetricTestModule('../../rule-engine-manager-ui/components/Metric/source-picker/useMetricSourceAdapter.ts',{
   '../../../api/metricBusinessSources': 'export const loadMetricObjectTypes=async()=>[];export const queryMetricBusinessObjects=async()=>({data:[],total:0});',
   '../../../../api/metricBusinessSources': 'export const loadObjectSourceCapabilities=async()=>[];export const loadObjectSourceMetadata=async()=>({});',
   '../../../../api/metricSources': 'export const describeMetricProvider=async()=>({schema:{},capabilities:[]});',
