@@ -56,11 +56,22 @@
 							      />
 							      <a-space v-if="!isProject || batchActions.length" class="product-page__actions">
 								      <EmptyCreateButton v-if="!isProject" key="add" />
-								      <BatchDropdown key="batch" :actions="batchActions">
-                        <template #item-extra="{ item }">
-                          <DocumentHelp v-if="item.key === 'syncCache'" code="device/Product" help-key="syncCache" />
+                      <a-dropdown>
+                        <a-button>{{ $t('UnifiedDeviceList.batch') }} <AIcon type="DownOutlined" /></a-button>
+                        <template #overlay>
+                          <a-menu>
+                            <a-menu-item
+                              v-for="item in batchActions"
+                              :key="item.key"
+                              :disabled="item.disabled"
+                              @click="!item.disabled && item.onClick()"
+                            >
+                              <span :title="item.disabled ? $t('Detail.index.478940-4') : undefined">{{ item.text }}</span>
+                              <DocumentHelp v-if="item.key === 'syncCache'" code="device/Product" help-key="syncCache" />
+                            </a-menu-item>
+                          </a-menu>
                         </template>
-                      </BatchDropdown>
+                      </a-dropdown>
 							      </a-space>
 						      </a-flex>
 					      </template>
@@ -213,7 +224,6 @@ import ConditionFilter, {
   type ConditionFilterTerm,
 } from '@jetlinks-web-core/components/ConditionFilter';
 import { useTermOptions } from '@jetlinks-web/components/es/Search/hooks/useTermOptions'
-import BatchDropdown from "@jetlinks-web-core/components/BatchDropdown/index.vue";
 import DocumentHelp from '@jetlinks-web-core/components/DocumentHelp'
 import { IconBadge } from '@jetlinks-web-core/components'
 import { getI18nText } from '../../../utils/i18n'
@@ -362,14 +372,13 @@ const batchActions = computed(() => {
     ...(canImportProduct.value ? [{
       key: 'import',
       text: $t("Product.index.660348-1"),
-      icon: 'UploadOutlined',
+      disabled: false,
       onClick: () => resourcePackageRef.value?.show(),
     }] : []),
     {
       key: 'syncCache',
       text: $t('Product.index.660348-41'),
-      icon: 'SyncOutlined',
-      permission: 'device/Product:update',
+      disabled: !authStore.hasPermission('device/Product:update'),
       onClick: () => {
         syncCacheVisible.value = true;
       }
