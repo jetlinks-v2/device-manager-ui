@@ -333,6 +333,15 @@ test('readonly metadata configuration cannot emit changes or save metrics, and o
   settings.configValue.value.nested.value = 2
   assert.equal(original.nested.value, 1)
   assert.equal(original.isKeyMetric, true)
+  assert.deepEqual(calls, ['query'])
+  calls.length = 0
+  const deviceSettings = scope.run(() => usePropertyOtherSettings({ readonly: true, target: 'device', id: 'temperature', type: 'float',
+    metadataType: 'properties', value: original, record: row }, (...args) => calls.push(args)))
+  deviceSettings.modalVisible.value = true
+  await vue.nextTick()
+  assert.equal(deviceSettings.showMetrics.value, false)
+  assert.equal(deviceSettings.showKeyProperty.value, true)
+  assert.deepEqual(calls, [])
   scope.stop()
 })
 

@@ -76,7 +76,7 @@ export interface IotDeviceDetailViewProps {
   embedded?: {
     deviceId: string
     deviceDetail?: Partial<DeviceInstance>
-    panel: 'thing-model' | 'data' | 'property-rules'
+    panel: 'thing-model' | 'data' | 'property-rules' | 'alarm'
     updatePermission: boolean
   }
 }

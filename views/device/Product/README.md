@@ -10,6 +10,10 @@ SaaS 复用产品列表与详情，产品由运营端设备库通过既有设备
 
 ## 产品详情配置
 
+规则配置界面与设备详情保持一致：`Detail/components/ProductAlarmConfigTab.vue` 复用 `PropertyRulesPanel` 的 `presentation="detail"`，展示已配置属性卡、配置数量和添加属性入口，规则在卡片内直接编辑、保存与撤销。仅切换现有展示参数，继续使用产品作用域、产品编辑权限与原保存接口；产品规则仍按产品范围生效。
+
+验证：Node 22.18.0 下 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 244/244 通过，产品入口 SFC 脚本/模板编译与 `git diff --check` 通过；运行时根目录执行 `pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 构建通过，保留既有资源路径、循环分块、输出选项和大包警告。9200 实页刷新确认已保存产品规则直接显示配置控件、配置数量及添加入口，保留产品作用域说明；本次未写入真实规则。模块和工作区无独立 lint 脚本；`node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 未通过，报告 1731 条工作区诊断，例如未修改的 `jetlinks-web-core/src/api/account/center.ts` TS2347，本次修改的产品入口文件无诊断。
+
 详情操作按编辑、启用/禁用、删除排列；接入、物模型和数据解析沿用统一页签、配置弹窗及调试面板。产品解析在右上角直接保存，不要求先调试；解析类型切换、重新加载和未保存提示与设备保持一致。重新加载恢复已保存配置、清空调试结果并保留模拟输入，应用内离开时才确认未保存内容。
 
 物模型分组在左侧管理。产品拥有的分组可新增、编辑和删除；设备继承后保持只读，设备自建分组独立管理。插件设备文件导入的模板和导入操作使用相同插件控制器，模板中的设备 ID 表示第三方设备 ID；普通设备继续使用标准模板与导入接口。

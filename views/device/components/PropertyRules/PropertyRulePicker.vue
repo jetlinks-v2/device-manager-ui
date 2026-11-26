@@ -1,4 +1,5 @@
 <template>
+  <span class="rule-property-add-trigger">
   <a-popover v-model:open="open" trigger="click" placement="bottomRight" :destroy-tooltip-on-hide="true">
     <template #content>
       <div class="rule-property-picker" role="dialog" :aria-label="$t('PropertyRules.addProperty')" @keydown.esc="open = false">
@@ -18,6 +19,7 @@
     </template>
     <a-button class="rule-property-add" :disabled="disabled || !rows.length"><template #icon><AIcon type="PlusOutlined" /></template>{{ $t('PropertyRules.addProperty') }}</a-button>
   </a-popover>
+  </span>
 </template>
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
@@ -50,7 +52,9 @@ function select(id: string) {
 }
 </script>
 <style scoped>
-.rule-property-add { height: 32px; margin-inline-start: auto; font-size: 14px; }
+/* Keep toolbar alignment outside the disabled-button wrapper created by the popover. */
+.rule-property-add-trigger { display: inline-flex; margin-inline-start: auto; }
+.rule-property-add { height: 32px; font-size: 14px; }
 .rule-property-picker { width: min(360px, calc(100vw - 64px)); font-size: 14px; }
 .rule-property-options { max-height: 320px; overflow-y: auto; margin-top: var(--space-2); }
 .rule-property-option { display: flex; align-items: center; gap: var(--space-2); height: auto; min-height: 52px; padding: var(--space-2); text-align: start; }
