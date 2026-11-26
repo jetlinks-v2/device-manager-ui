@@ -47,13 +47,6 @@ export default {
     typeId: 'device',
     members: [{ ref: { providerId: 'device-data', kind: 'query', id: 'snapshots' },
       component: defineAsyncComponent(() => import('./components/ObjectPropertySnapshots.vue')) }],
-    queries: {
-      propertySnapshot: {
-        nodeField: 'value',
-        icon: 'DashboardOutlined',
-        parameters: defineAsyncComponent(() => import('./components/ObjectPropertyFocus.vue'))
-      }
-    },
     open: (object) => openDevice(object.id),
     fields: [
       {
@@ -78,7 +71,6 @@ export default {
   },
   product: {
     typeId: 'product',
-    queries: { deviceSummary: { nodeField: 'deviceCount', icon: 'HddOutlined' } },
     open: (object) => openPage('device/Product/Detail', { params: { id: object.id } }),
     fields: [
       {

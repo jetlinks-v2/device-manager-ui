@@ -235,7 +235,10 @@ import SlantedTabs from '@jetlinks-web-core/components/SlantedTabs'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
-import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '@edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
+import type { Ref } from 'vue'
+
+// Optional monitor payloads are owned by the registered monitor component.
+type GatewayMetricsLoader = (targets: Readonly<Ref<Array<{ id: string; deviceId: string; productId?: string }>>>) => { metricsMap: Record<string, unknown> }
 import ObjectMetrics from '../../metrics/ObjectMetrics.vue'
 import IotDeviceScopeSidebar from '../components/IotDeviceScopeSidebar.vue'
 import IotDeviceAssetSearchBar from '../components/IotDeviceAssetSearchBar.vue'
@@ -281,7 +284,7 @@ function canDeviceBatchAction(action: 'delete' | 'enable' | 'export' | 'import')
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection } = useUnifiedDeviceList()
 const channelSupported = useDeviceListChannelSupport(activeProvider)
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
-const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
+const useGatewayMetrics = moduleRegistry.getResourceItem<GatewayMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 // 只监控边缘节点分类的当前页，切换分类或重新加载列表时撤掉旧查询目标。
 const gatewayMetricTargets = computed(() => activeType.value === 'gateway' && !loading.value
   ? rows.value.map(device => ({ id: device.id, deviceId: device.id, productId: device.productId }))
