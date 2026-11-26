@@ -529,20 +529,13 @@
                 {
                   "permission": "device-instance",
                   "actions": [
-                    "delete",
-                    "import",
-                    "export",
-                    "enable",
-                    "query",
-                    "save",
-                    "disable"
+                    "query"
                   ]
                 },
                 {
                   "permission": "device-product",
                   "actions": [
-                    "query",
-                    "save"
+                    "query"
                   ]
                 },
                 {
@@ -767,7 +760,8 @@
                               "permission": "device-instance",
                               "actions": [
                                   "query",
-                                  "enable"
+                                  "enable",
+                                  "save"
                               ]
                           }
                       ]
@@ -918,7 +912,9 @@
                               "permission": "device-instance",
                               "actions": [
                                   "query",
-                                  "save"
+                                  "save",
+                                  "enable",
+                                  "disable"
                               ]
                           },
                           {

@@ -45,6 +45,8 @@ export function usePropertyOtherSettings(props: Readonly<Record<string, any>>, e
     : (showKeyProperty.value || showMetrics.value || config.value.length > 0) && props.id)
 
   const showMetrics = computed(() => {
+    // 设备指标读写共用配置权限，只读弹窗不展示也不加载该配置。
+    if (props.target === 'device' && props.readonly) return false
     return [
       'int',
       'long',
