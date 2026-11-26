@@ -2375,6 +2375,85 @@
             ],
             "buttons": [
               {
+                "id": "view",
+                "name": "查看",
+                "i18nMessages": {
+                  "zh_CN": "查看",
+                  "en_US": "View",
+                  "en": "View",
+                  "ja": "表示",
+                  "ja_JP": "表示"
+                },
+                "permissions": [
+                  {
+                    "permission": "device-instance",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "device-product",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "device-category",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "device-template",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "marketplace",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "alarm-config",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "alarm-record",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "user",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "notify-channel",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "template",
+                    "actions": [
+                      "query"
+                    ]
+                  },
+                  {
+                    "permission": "notifier",
+                    "actions": [
+                      "query"
+                    ]
+                  }
+                ]
+              },
+              {
                 "id": "add",
                 "name": "新增",
                 "i18nMessages": {
@@ -2597,6 +2676,85 @@
           }
         ],
         "buttons": [
+          {
+            "id": "view",
+            "name": "查看",
+            "i18nMessages": {
+              "zh_CN": "查看",
+              "en_US": "View",
+              "en": "View",
+              "ja": "表示",
+              "ja_JP": "表示"
+            },
+            "permissions": [
+              {
+                "permission": "device-instance",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "device-product",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "device-category",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "device-template",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "marketplace",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "alarm-config",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "alarm-record",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "user",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "notify-channel",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "template",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
+                "permission": "notifier",
+                "actions": [
+                  "query"
+                ]
+              }
+            ]
+          },
           {
             "id": "add",
             "name": "新增",
