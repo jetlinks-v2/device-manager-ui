@@ -26,6 +26,7 @@ export interface ParsedRule {
   providers: string[]
 }
 export interface RuleDraft extends SamplingDraft, ValueRuleDraft, CorrectionDraft {
+  enabled?: boolean
   recordInvalid?: boolean
   valuesEnabled: boolean
   valuesMode: 'ignore' | 'keep' | 'replace'
@@ -230,6 +231,7 @@ export function buildRule(parsed: ParsedRule, draft: RuleDraft): ThingPropertyPr
   if (draft.samplingEnabled) nodes.sampling = buildSampling(draft, parsed.nodes.sampling)
   if (draft.fileEnabled) nodes.file = updateNode(parsed.nodes.file, { provider: 'file-storage', configuration: {} })
   const rule = packRule(parsed, nodes)
+  rule.enabled = draft.enabled !== false
   if (draft.recordInvalid && hasDiscardingCleaning(draft)) rule.configuration.recordInvalid = true
   else delete rule.configuration.recordInvalid
   return rule
