@@ -700,6 +700,25 @@
               ],
               "buttons": [
                   {
+                      "id": "algorithms",
+                      "name": "算法配置",
+                      "i18nMessages": {
+                          "zh_CN": "算法配置",
+                          "en_US": "Algorithm Configuration",
+                          "en": "Algorithm Configuration",
+                          "ja": "アルゴリズム設定",
+                          "ja_JP": "アルゴリズム設定"
+                      },
+                      "permissions": [
+                          {
+                              "permission": "ai_scene",
+                              "actions": [
+                                  "query"
+                              ]
+                          }
+                      ]
+                  },
+                  {
                       "id": "export",
                       "name": "导出",
                       "i18nMessages": {

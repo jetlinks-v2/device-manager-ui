@@ -55,7 +55,7 @@
 					          <a-menu-item :disabled="!canDeviceBatchAction('export')" key="export">{{ t('Instance.index.133466-30') }}</a-menu-item>
 					          <a-menu-item v-if="!isSaaS" :disabled="!canDeviceBatchAction('import')" key="import">{{ t('Instance.index.133466-31') }}</a-menu-item>
 					          <a-menu-item :disabled="!canDeviceBatchAction('enable')" key="activateAll">{{ t('Instance.index.133466-32') }}</a-menu-item>
-						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}<DocumentHelp code="iot-user-device-list" help-key="batch.algorithms" /></a-menu-item>
+						          <a-menu-item v-if="activeType === 'gateway' && menu.hasMenu('algorithm-center')" :disabled="!canConfigureGatewayAlgorithms" key="algorithms">{{ t('UnifiedDeviceList.batchAlgorithms') }}<DocumentHelp code="iot-user-device-list" help-key="batch.algorithms" /></a-menu-item>
 						          <a-menu-item v-if="activeType === 'gateway'" :disabled="!canConfigureGatewayPlugins" key="plugins">{{ t('UnifiedDeviceList.batchPlugins') }}<DocumentHelp code="iot-user-device-list" help-key="batch.plugins" /></a-menu-item>
 						          <a-menu-item :disabled="!canDeviceBatchAction('syncStatus')" key="syncStatus">
                         {{ t('IotDeviceList.action.syncStatus') }}
@@ -303,7 +303,7 @@ function formatBrandModel(value?: string) {
     : t('IotDeviceDetail.common.unconfigured')
 }
 const { projectId, editing, editOpen, initialProductId, productOnboardingDeviceCreation, createDrawerOptions, createEntry, guideRequest, canCreate, openCreate, detailDevice, busy, selected, allowed, openDetail, edit, toggle, remove, canDelete, batchToggle, batchRemove, assignAreaOpen, assignGroupOpen, assignArea, assignGroup, deviceImportOpen, deviceImportProductId, productOnboardingDeviceImport, openDeviceImport, enableOnboardedDeviceAndOpenAccess } = useUnifiedDeviceActions(rows, selectedIds, clearBatchSelection, providerOf, refresh, activeProvider, canDeviceBatchAction)
-const { openBatchPage } = useUnifiedDeviceBatchNavigation({ selected, searchTerms, filterFields, syncGatewayStatus })
+const { openBatchPage, canConfigureGatewayAlgorithms } = useUnifiedDeviceBatchNavigation({ activeType, selected, searchTerms, filterFields, syncGatewayStatus })
 const configurationRequest = ref(0)
 
 // 私有化网关由产品抽屉直接创建；完成后单独通知待办引导，不能复用 SaaS 的扫码请求。

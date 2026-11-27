@@ -95,10 +95,20 @@
 
 ### 设备列表批量配置快捷入口（已实施）
 
-- 当前入口：边缘节点分类的“批量操作”提供“算法配置”“插件配置”和状态同步。算法配置跳转 AI 模块注册的“资源中心 → 算法配置”独立菜单 `algorithm-center`（`/resources/algorithm-center`），不携带当前列表选择或查询；快捷项通过新菜单授权控制显示。插件配置继续进入批量页并使用 `batchTab=plugins`，状态同步继续调用原流程。
+- 当前入口：边缘节点分类的“批量操作”提供“算法配置”“插件配置”和状态同步。算法配置跳转 AI 模块注册的“资源中心 → 算法配置”独立菜单 `algorithm-center`（`/resources/algorithm-center`），不携带当前列表选择或查询；快捷项通过新菜单授权控制显示，并由设备列表独立按钮授权控制可用性。插件配置继续进入批量页并使用 `batchTab=plugins`，状态同步继续调用原流程。
 - 影响范围与 owning modules：仅 `runtime-ui/modules/device-manager-ui` 的统一列表及批量导航 hook，以及 `runtime-ui/modules/jetlinks-ai-ui` 的菜单、页签注销和路由壳。统一列表被网关工作台复用，相关网关入口同步生效；接口、插件组件、列表筛选及运营端 `ui/` 不变。完整共享影响和 AI 侧权限说明见 `../jetlinks-ai-ui/docs/plans/project-algorithm-center-prototype.md` 的“算法配置独立菜单恢复”。
 - 实施入口：`views/device/list/unified/index.vue` 负责入口显示与事件绑定；`useUnifiedDeviceBatchNavigation.ts` 负责按快捷项导航，复用 core 菜单 store 和 `ConditionFilter` 查询编码。插件批量页保留已选网关 ID 或原列表查询范围；批量页仍优先应用注册表中存在的 `batchTab`，返回列表时移除临时批量参数。
 - 验证：算法独立跳转、三种插件查询范围和状态同步共 5 种内存导航场景通过；同步最新 `2.20` 后保留新增设备配置与空间展示逻辑。列表 SFC 脚本/模板/样式、新 hook TS 语法和 `git diff --check` 通过，列表由基线 391 行减至 378 行，作为窄范围菜单修正保留现有结构。`pnpm --config.verify-deps-before-run=false -F jetlinks-web-core build -- --module-name device-manager-ui` 构建通过（10,934 个模块，3 分 18 秒）；`pnpm exec vue-tsc --noEmit -p modules/device-manager-ui/tsconfig.json` 被未修改的 `views/link/Certificate/type.d.ts:2` 语法错误阻断。没有独立 lint 或样式门禁脚本；未新增或修改测试、CSS，未打开浏览器。实际菜单同步、授权及页面交互待人工验收。
+
+#### 算法配置快捷入口按钮权限（已实施）
+
+- 当前行为：`/resources/devices/list?type=gateway` 的“批量操作 → 算法配置”使用独立按钮授权 `iot-user-device-list:algorithms`。保持网关分类与 `algorithm-center` 菜单存在条件；缺少按钮授权时置灰，执行跳转前再次校验分类、菜单与按钮权限，授权撤销或分类变化后立即拦截。
+- 影响范围与 owning module：仅 `runtime-ui/modules/device-manager-ui` 的 `baseMenu.json`、`views/device/list/unified/index.vue`、`views/device/list/unified/useUnifiedDeviceBatchNavigation.ts` 和 `tests/unifiedDeviceAlgorithmPermissions.test.mjs`；统一列表的复用入口同步应用相同授权。本次只控制快捷入口，独立算法菜单、工作区内操作权限、后端接口、其他批量操作及运营端 `ui/` 保持原流程。
+- 实现：设备列表菜单声明 `algorithms` 按钮及中英日名称，关联已有 `ai_scene:query`，避免被运行时菜单初始化过滤。导航 hook 导出响应式 `canConfigureGatewayAlgorithms`，页面置灰与导航拦截共用同一校验；不使用历史菜单别名或编辑权限代替该独立授权。
+- 生效方式：存量环境需使用更新后的运行时前端同步/初始化菜单，在角色或应用授权中勾选“设备列表 → 算法配置”，并刷新账号授权。仅有设备列表或算法配置菜单访问权限不再放行该快捷入口；直接访问独立算法配置菜单继续按其原有授权。
+- 验证：模块内执行 `node --test tests/unifiedDeviceAlgorithmPermissions.test.mjs tests/unifiedDeviceBatchActions.test.mjs tests/deviceMenuPermissionInitialization.test.mjs tests/unifiedDeviceTabs.test.mjs`，20/20 通过，其中新增 8 项覆盖按钮声明、真实初始化过滤、菜单/接口/其他按钮权限不能替代授权、明确授权、目标菜单缺失、分类变化及授权撤销，并回归插件选择/查询范围和状态同步。新增测试在实现前 7 项失败、1 项通过；实现后全部通过。Vue 脚本与模板编译、hook TypeScript 语法及差异空白检查通过。
+- 构建与类型：在 `runtime-ui/jetlinks-web-core/` 执行 `node --max-old-space-size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-algorithm-button-build -- --module-name device-manager-ui` 通过（38.13 秒），构建产物 `dist/baseMenu.json` 包含新按钮，保留既有资源路径、Rollup 输出配置与大包警告。`runtime-ui/` 中执行 `node node_modules/vue-tsc/bin/vue-tsc.js --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，前后均为 1,731 项诊断；忽略行列号后，诊断新增/减少均为 0。导航 hook 无诊断，列表组件 3 项既有诊断保持不变，完整类型检查未通过。工作区、core 和本模块均无独立 lint 脚本。
+- 验证限制：扩展执行 `tests/alarmButtonMenuPermissions.test.mjs` 时 1 项通过、2 项失败，均因原测试未预期已有 `view` 按钮；使用当前 `HEAD` 原始文件隔离复测得到相同结果。未操作真实角色或应用授权、未进行浏览器验收；部署后需核对新按钮可配置、无授权置灰、授权后跳转与撤销后拦截。日志见 `/tmp/jetlinks-algorithm-button-{tests,build,types-before,types-after,baseline-alarm}.log`。未推送。
 
 ### 统一设备列表操作按钮菜单授权
 

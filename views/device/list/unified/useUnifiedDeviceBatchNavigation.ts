@@ -1,10 +1,11 @@
-import type { Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useMenuStore } from '@jetlinks-web-core/store'
+import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { encodeConditionFilterQuery, type ConditionFilterField, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import type { UnifiedDevice } from '../../../../deviceListProvider'
 
 interface UnifiedDeviceBatchNavigationOptions {
+  activeType: Ref<string>
   selected: Ref<UnifiedDevice[]>
   searchTerms: Ref<ConditionFilterTerm[]>
   filterFields: Ref<ConditionFilterField[]>
@@ -15,9 +16,15 @@ interface UnifiedDeviceBatchNavigationOptions {
 export function useUnifiedDeviceBatchNavigation(options: UnifiedDeviceBatchNavigationOptions) {
   const route = useRoute()
   const menu = useMenuStore()
+  const auth = useAuthStore()
+  // 菜单访问不能代替快捷按钮授权；响应分类和授权变化，点击时复用同一检查。
+  const canConfigureGatewayAlgorithms = computed(() => options.activeType.value === 'gateway'
+    && menu.hasMenu('algorithm-center')
+    && auth.hasPermission('iot-user-device-list:algorithms'))
 
   function openBatchPage({ key }: { key: string | number }) {
     if (key === 'algorithms') {
+      if (!canConfigureGatewayAlgorithms.value) return
       menu.jumpPage('algorithm-center')
       return
     }
@@ -34,5 +41,5 @@ export function useUnifiedDeviceBatchNavigation(options: UnifiedDeviceBatchNavig
     } })
   }
 
-  return { openBatchPage }
+  return { openBatchPage, canConfigureGatewayAlgorithms }
 }
