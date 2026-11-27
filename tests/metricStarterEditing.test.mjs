@@ -2,16 +2,14 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
 import { loadMetricTestModule } from './metricTestModule.mjs'
+import { createMetricLoader, sourceRoot } from '../../rule-engine-manager-ui/tests/helpers/metricRuntime.mjs'
 
 const { iotMetricStarters } = await loadMetricTestModule('../views/metric/Template/starters.ts')
-const coreRoot = process.env.METRIC_TEST_CORE_ROOT || fileURLToPath(new URL('../../../jetlinks-web-core/',import.meta.url))
-const { createMetricLoader } = await import(pathToFileURL(resolve(coreRoot,'tests/helpers/metricRuntime.mjs')))
 const load = createMetricLoader({ '@jetlinks-web/core':{request:{}} })
 const { findCalculator, interactiveCalculator, bindAlgorithmInput } = load('components/Metric/template/algorithm.ts')
 const { ruleExpression } = load('components/Metric/template/designer.ts')
-const descriptors = JSON.parse(readFileSync(resolve(coreRoot,'tests/fixtures/metricCalculatorDocumentation.json'),'utf8'))
+const descriptors = JSON.parse(readFileSync(resolve(sourceRoot,'tests/fixtures/metricCalculatorDocumentation.json'),'utf8'))
 
 test('所有内置算法配置均能通过统一描述交互编辑，无需自定义声明',()=>{
   for (const starter of iotMetricStarters) for (const rule of starter.template.definitions) {

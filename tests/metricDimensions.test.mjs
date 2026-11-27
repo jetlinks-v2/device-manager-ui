@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { effectScope, nextTick, ref } from 'vue'
 import { loadMetricTestModule } from './metricTestModule.mjs'
 const store='export const useAuthStore=()=>globalThis.__metricHost.auth;export const useMenuStore=()=>globalThis.__metricHost.menu'
 const mocks={
   '@jetlinks-web-core/locales':'export default {global:{t:key=>key}}',
   '@jetlinks-web-core/store':store,
   './api/metricNavigation':'export const queryMetricGroupTree=async()=>({data:[],total:0});export const queryMetricOwnerPage=async()=>({data:[],total:0});export const resolveMetricObjects=async()=>[]',
-  './views/device/metrics/useMetricSourceAdapter':'export const useMetricSourceAdapter=()=>({pickSource:async()=>undefined})',
+  '@rule-engine-manager-ui/metric':'export const useMetricSourceAdapter=()=>({pickSource:async()=>undefined})',
 }
 const {default:device}=await loadMetricTestModule('../metricDimensions.ts',mocks)
 const {default:space}=await loadMetricTestModule('../../jetlinks-space-ui/metricDimensions.ts',{
@@ -90,135 +89,4 @@ test('cross-entry navigation keeps exact IDs and requires its authorized menu',(
   useMetricLinks().openWorkspace(reference)
   assert.deepEqual(calls[0],['rule-engine/Metric',{query:{projectId:'p',metricOwnerType:'deviceGroup',metricOwnerId:'g',metricConfigId:'config-2',metricOutputId:'output-2'}}])
   allowed.clear();menus.clear()
-})
-
-const {useMetricSourceAdapter}=await loadMetricTestModule('../views/device/metrics/useMetricSourceAdapter.ts',{
-  '../../../api/metricBusinessSources': 'export const loadMetricObjectTypes=async()=>[];export const queryMetricBusinessObjects=async()=>({data:[],total:0});',
-  '../../../../api/metricBusinessSources': 'export const loadObjectSourceCapabilities=async()=>[];export const loadObjectSourceMetadata=async()=>({});',
-  '../../../../api/metricSources': 'export const describeMetricProvider=async()=>({schema:{},capabilities:[]});',
-  'vue-i18n':'import {ref} from "vue";export const useI18n=()=>({t:key=>key.replace(/^metricSources\\./,""),mergeLocaleMessage:()=>{},locale:ref("zh")})',
-  '../../../api/metricSources':`export const queryMetricDevices=async()=>({data:[],total:0});export const loadMetricDevice=async id=>({device:{id,name:id},properties:[{id:"$online",name:"在线状态",platform:true,history:true,valueType:{type:"int"}}]});export const loadMetricProduct=async()=>[{id:"power",name:"Power",valueType:{type:"double"}},{id:"$online",name:"在线状态",platform:true,history:true,valueType:{type:"int"}}];export const loadMetricBuiltins=async()=>[];
-    const item={config:{id:"source",name:"Temperature",state:"enabled",scope:"single",targetType:"device",targetId:"d1"},template:{id:"t",version:"1",name:"Temperature",options:{},inputDefinitions:[],parameterDefinitions:[],definitions:[],outputs:[{metricId:"average",label:"Average",valueType:"double",persist:true,unit:"℃"}]},output:{metricId:"average",label:"Average",valueType:"double",persist:true,unit:"℃"}};
-    export const loadMetricOutputs=async()=>[item];export const loadMetricOutput=async()=>item;export const readMetricLatest=async()=>[];export const loadMetricProductSources=async id=>({properties:await loadMetricProduct(id),events:[]});export const describeMetricProvider=async()=>({});export const readMetricProvider=async()=>undefined;
-    export const loadMetricObjectSources=(type,id)=>type==='device'?loadMetricDevice(id):loadMetricProductSources(id);
-    export const loadMetricInheritedOutputs=async()=>[];export const loadMetricProductName=async id=>id;export const queryMetricProducts=async()=>({data:[],total:0});`,
-})
-test('inline source selection reuses the device model and does not open a second modal',async()=>{
-  const scope=effectScope(), context=ref({ownerType:'device',ownerId:'d1'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  const state=adapter.pickSource.editor.setup()().props.state
-  try {
-    const pending=adapter.pickSource({context:context.value,input:{id:'running',valueType:{type:'int'}},inline:true})
-    await new Promise(resolve=>setImmediate(resolve));await nextTick()
-    assert.equal(adapter.host.setup()(),null)
-    assert.equal(state.deviceId.value,'d1')
-    assert.equal(state.propertyLoading.value,false)
-    state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.id === '$online'));state.confirm()
-    assert.equal((await pending).mapping.thingId,'d1')
-  } finally {scope.stop()}
-})
-test('source descriptions resolve business names and report a removed property explicitly',async()=>{
-  const scope=effectScope(), context=ref({ownerType:'product',ownerId:'pumps',scope:'children'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  try {
-    const descriptions=await adapter.pickSource.describe(context.value,{
-      power:{kind:'property',id:'power'},missing:{kind:'property',id:'removed'},online:{kind:'property',id:'$online'},external:{kind:'metric',id:'other'}
-    })
-    assert.equal(descriptions.power.label,'currentDevice / Power')
-    assert.equal(descriptions.missing.error,'sourceMissing')
-    assert.equal(descriptions.online.label,'currentDevice / online')
-    assert.equal(descriptions.external.error,'unsupported')
-  } finally {scope.stop()}
-})
-
-test('same-object context refresh keeps inline source selection while changing owner cancels it',async()=>{
-  const scope=effectScope(),context=ref({ownerType:'device',ownerId:'d1',label:'Device'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  const state=adapter.pickSource.editor.setup()().props.state
-  try {
-    const pending=adapter.pickSource({context:context.value,input:{id:'power',valueType:{type:'double'}},inline:true})
-    await flushSource()
-    context.value={...context.value,label:'Renamed device'}
-    await nextTick()
-    assert.equal(state.open.value,true)
-    assert.equal(state.deviceId.value,'d1')
-    state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.kind === 'builtin'))
-    context.value={...context.value}
-    await nextTick()
-    assert.equal(state.category.value,'builtin')
-    assert.equal(state.open.value,true)
-    context.value={ownerType:'device',ownerId:'d2',label:'Other device'}
-    await nextTick()
-    assert.equal(await pending,undefined)
-    assert.equal(state.open.value,false)
-  } finally {scope.stop()}
-})
-
-test('existing metrics bind public outputs, exclude self and recover authorized names',async()=>{
-  const scope=effectScope(),context=ref({ownerType:'device',ownerId:'d1',targetType:'device',targetId:'d1'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  const state=adapter.pickSource.editor.setup()().props.state
-  try {
-    const pending=adapter.pickSource({context:context.value,configId:'dependent',input:{id:'value',valueType:{type:'double'}},inline:true})
-    await flushSource()
-    assert.equal(state.choosingObject.value,false)
-    state.metricsExpanded.value=true;await flushSource()
-    state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.kind === 'metric'))
-    assert.equal(state.metricSources.items.value.length,1)
-    const item=state.metricSources.items.value[0]
-    state.confirmMetric(item,'d1 / Average')
-    assert.deepEqual((await pending).mapping,{kind:'metric',configId:'source',thingType:'device',thingId:'d1',id:'average'})
-    const descriptions=await adapter.pickSource.describe(context.value,{value:{kind:'metric',configId:'source',thingType:'device',thingId:'d1',id:'average'}})
-    assert.equal(descriptions.value.label,'Temperature / Average')
-    const self=adapter.pickSource({context:context.value,configId:'source',input:{id:'value',valueType:{type:'double'},source:{kind:'metric'}},inline:true})
-    await flushSource()
-    assert.equal(state.metricSources.items.value.length,0)
-    state.cancel();await self
-  } finally {scope.stop()}
-})
-const flushSource=async()=>{await new Promise(resolve=>setImmediate(resolve));await nextTick()}
-test('product inheritance picks the current member property without fixing a device ID',async()=>{
-  const scope=effectScope(),context=ref({ownerType:'product',ownerId:'pumps'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  const state=adapter.host.setup()().props.state
-  try {
-    const pending=adapter.pickSource({context:{...context.value,scope:'children'},input:{id:'reading',valueType:{type:'double'}}})
-    await new Promise(resolve=>setImmediate(resolve));await nextTick()
-    assert.equal(state.inherited.value,true)
-    assert.deepEqual(state.devices.value,[])
-    assert.equal(state.deviceId.value,'')
-    state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.id === 'power'))
-    assert.equal(state.canConfirm.value,true)
-    state.confirm()
-    assert.deepEqual((await pending).mapping,{kind:'property',thingType:'device',id:'power'})
-  } finally {scope.stop()}
-})
-test('public source adapter owns its modal and cancels pending selection when owner changes or unmounts',async()=>{
-  const scope=effectScope(),context=ref({ownerType:'space',ownerId:'s1'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  const state=adapter.host.setup()().props.state
-  const first=adapter.pickSource({context:context.value,input:{id:'power',valueType:{type:'double'}}})
-  assert.equal(state.open.value,true)
-  context.value={ownerType:'space',ownerId:'s2'};await nextTick()
-  assert.equal(await first,undefined)
-  assert.equal(state.open.value,false)
-  const second=adapter.pickSource({context:context.value,input:{id:'power',valueType:{type:'double'}}})
-  scope.stop()
-  assert.equal(await second,undefined)
-})
-
-test('source confirmation keeps the visible built-in name and stable mapping ID',async()=>{
-  const scope=effectScope(),context=ref({ownerType:'device',ownerId:'d1'})
-  const adapter=scope.run(()=>useMetricSourceAdapter(context))
-  const state=adapter.host.setup()().props.state
-  try {
-    const pending=adapter.pickSource({context:context.value,input:{id:'running',valueType:{type:'int'}}})
-    await state.selectDevice('d1')
-    state.selectMethod(state.items.value.flatMap(item=>item.methods).find(item=>item.id === '$online'))
-    state.confirm()
-    const selection=await pending
-    assert.equal(selection.label,'d1 / 在线状态')
-    assert.equal(selection.mapping.id,'$online')
-    assert.equal(selection.mapping.thingId,'d1')
-  } finally {scope.stop()}
 })
