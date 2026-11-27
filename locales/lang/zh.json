@@ -24,6 +24,8 @@
 
   "Product.codec.loadFailed": "数据解析配置加载失败",
   "Product.codec.empty": "暂无数据解析配置",
+  "Product.codec.noSupportedProvider": "当前环境没有可用于产品的解析器",
+  "Product.codec.providerUnavailable": "已配置的解析器 {provider} 在当前环境不可用，仅可查看配置。",
 
     "PropertyRules.diagram.intent": "仅展示处理意图；实际动作取决于运行状态，不会在图例中执行",
   "PropertyRules.diagram.process": "计算过程",

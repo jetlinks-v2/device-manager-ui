@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useProductStore } from '../../../../store/product'
@@ -51,7 +51,8 @@ import ProductDetailSummary from './components/ProductDetailSummary.vue'
 import PageBack from '@jetlinks-web-core/components/PageBack/index.vue'
 import SlantedTabs, { type SlantedTabOption } from '@jetlinks-web-core/components/SlantedTabs'
 import { tabs } from './asyncComponent'
-import { buildProductDetailTabs, resolveProductDetailTab, type ProductDetailTabKey } from './detailTabs'
+import { buildProductDetailTabs, resolveProductDetailTab, supportsProductCodec, type ProductDetailTabKey } from './detailTabs'
+import { createProductCodecSupport, productCodecSupportKey } from './DataAnalysis/useProductCodec'
 import { hasProductCreatedGuide, updateProductCreatedGuide } from '../hooks/useProductCreatedGuide'
 import { Modal } from 'ant-design-vue'
 import { isProjectRuntime } from '@jetlinks-web-core/utils/project-runtime'
@@ -74,11 +75,21 @@ const canViewDevices = computed(() => menuStore.hasMenu('iot-user-device-list'))
 const isCreatedProductOnboarding = computed(() => (!isProjectRuntime() || isPrivateDeployment()) && route.query.onboarding === 'product-created'
   && hasProductCreatedGuide(typeof route.params.id === 'string' ? route.params.id : undefined))
 
+const productCodecSupport = createProductCodecSupport()
+provide(productCodecSupportKey, productCodecSupport)
+const supportsCodec = computed(() => productStore.current.id === route.params.id && supportsProductCodec(productStore.current))
+watch(supportsCodec, (supported) => {
+  if (supported) void productCodecSupport.load().catch(() => {
+    // 无法确认产品解析能力时，不提前展示入口。
+  })
+}, { immediate: true })
+
 const visibleTabs = computed(() => buildProductDetailTabs(productStore.current, {
   showRules: system.showThreshold,
   showAlarm: permissionStore.hasPermission('rule-engine/Alarm/Log:view') && system.showThreshold,
   showFirmware: permissionStore.hasPermission('device/Firmware:view'),
   showDashboard: isApplyDashboard(),
+  hasProductCodecProvider: supportsCodec.value && Boolean(productCodecSupport.providers.value?.length),
   isNoCommunity,
 }))
 
@@ -88,6 +99,10 @@ function syncActiveTab(tab?: unknown) {
   // 兼容旧详情链接的 Tab 参数，并在权限或功能开关变化时回退到首个可见入口。
   activeTab.value = resolveProductDetailTab(tab ?? activeTab.value, visibleTabs.value)
   productStore.tabActiveKey = activeTab.value
+  if (tab === 'DataAnalysis' && activeTab.value !== 'DataAnalysis' && route.query.tab === tab
+    && productStore.current.id === route.params.id && (!supportsCodec.value || productCodecSupport.providers.value?.length === 0)) {
+    void router.replace({ query: { ...route.query, tab: activeTab.value } })
+  }
 }
 
 function handleTabChange(key: string) {
@@ -210,7 +225,11 @@ function handleMetadataChanged(data: { type?: string; id?: string }) {
   promptEnableProduct()
 }
 
-watch(() => productStore.current, () => syncActiveTab(), { deep: true })
+watch(visibleTabs, () => {
+  const requested = route.query.tab ?? routerParams.params?.value.tab
+  // 能力查询完成前不打开解析页；若旧链接指定解析页，确认能力后再恢复该意图。
+  syncActiveTab(requested === 'DataAnalysis' ? requested : undefined)
+})
 
 // 引导入口通过标准 query 指定物模型页；同一详情页复用时也要响应 query 中的 Tab 变化。
 watch(() => route.query.tab, (tab) => {

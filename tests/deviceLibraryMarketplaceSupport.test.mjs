@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import ts from 'typescript'
+import * as vue from 'vue'
 
 const sourcePath = new URL('../api/device-library/index.ts', import.meta.url)
 const source = await readFile(sourcePath, 'utf8')
@@ -88,4 +89,64 @@ test('device library reads card display type from version resources returned by 
   assert.match(templateOptionSource, /displayDeviceType: template\.displayDeviceType/)
   assert.match(libraryCardSource, /subtitle: props\.template\.displayDeviceType/)
   assert.doesNotMatch(librarySelectionSource, /if \(!template\.deviceType\) return true/)
+})
+
+
+test('SaaS add-device drawer requests six templates or four products per page independently', async () => {
+  const requests = []
+  const templates = Array.from({ length: 8 }, (_, i) => ({ id: `t${i}`, name: `Template ${i}` }))
+  const products = Array.from({ length: 7 }, (_, i) => ({ id: `p${i}`, name: `Product ${i}` }))
+  const list = (source, entries) => async ({ pageIndex, pageSize, keyword }) => {
+    requests.push([source, pageIndex, pageSize, keyword || ''])
+    const matching = keyword ? entries.filter(entry => entry.name.includes(keyword)) : entries
+    return { data: matching.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize), total: matching.length, pageIndex, pageSize }
+  }
+  const noop = () => {}
+  const modules = {
+    vue,
+    'vue-i18n': { useI18n: () => ({ t: key => key }) },
+    '@device-manager-ui/api/device': {
+      queryDeviceProductPage_api: list('product', products),
+      queryDeviceProductCategoryTree_api: async () => ({ categories: [], total: products.length, unclassified: products.length }),
+    },
+    '@device-manager-ui/api/device-library': {
+      DEVICE_LIBRARY_TEMPLATE_PAGE_SIZE: Number(exportedFunctionBody('DEVICE_LIBRARY_TEMPLATE_PAGE_SIZE').match(/=\s*(\d+)/)?.[1]),
+      probeDeviceLibraryCapability_api: async () => true,
+      queryDeviceLibraryTags_api: async () => [],
+      queryDeviceLibraryTemplates_api: list('library', templates),
+    },
+    '@jetlinks-web-core/store': { useMenuStore: () => ({ siderMenus: [{ name: 'device/Product' }] }) },
+    './useIotDeviceImageUpload': { useIotDeviceImageUpload: () => ({ clearImage: noop }) },
+    './iotAddDeviceProductOptions': { toTemplateProductOption: value => value },
+  }
+  const exports = {}
+  const js = ts.transpileModule(addDrawerSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
+  new Function('exports', 'require', js)(exports, path => modules[path] ?? {})
+  const scope = vue.effectScope()
+  const drawer = scope.run(() => exports.useIotAddDeviceDrawer({ open: true, projectId: 'project' }, { updateOpen: noop, created: noop }))
+  const flush = () => new Promise(setImmediate)
+  try {
+    await flush()
+    assert.equal(drawer.creationSource.value, 'library')
+    assert.equal(drawer.libraryProducts.value.length, 6)
+    assert.equal(drawer.productCandidates.value.length, 4)
+    await drawer.loadDeviceLibraryTemplates(true, { pageIndex: 1 })
+    assert.deepEqual(drawer.libraryProducts.value.map(({ id }) => id), ['t6', 't7'])
+    drawer.selectSource('product')
+    await flush()
+    assert.equal(drawer.productCandidates.value.length, 4)
+    await drawer.loadProductCandidates(true, { pageIndex: 1 })
+    assert.deepEqual(drawer.productCandidates.value.map(({ id }) => id), ['p4', 'p5', 'p6'])
+    assert.equal(drawer.libraryPageIndex.value, 1)
+    drawer.selectSource('library')
+    await flush()
+    await drawer.loadDeviceLibraryTemplates(true, { pageIndex: 0, keyword: '0' })
+    assert.deepEqual(drawer.libraryProducts.value.map(({ id }) => id), ['t0'])
+    assert.deepEqual(requests, [
+      ['product', 0, 4, ''], ['library', 0, 6, ''], ['library', 1, 6, ''],
+      ['product', 0, 4, ''], ['product', 1, 4, ''], ['library', 1, 6, ''], ['library', 0, 6, '0'],
+    ])
+  } finally {
+    scope.stop()
+  }
 })

@@ -28,6 +28,7 @@ export type ProductItem = {
   i18nProtocolName?: string;
   state: number;
   transportProtocol: string;
+  features?: { id: string }[];
   describe?: string;
   i18nDescribe?: string;
   accessId?: string;

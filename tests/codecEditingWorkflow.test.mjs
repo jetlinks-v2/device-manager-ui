@@ -54,6 +54,7 @@ async function productHarness() {
   const ui = dialogs(), guard = await guardModule(ui)
   let stored = { provider: 'jsr223', configuration: { script: 'codec.onUpstream(function(ctx){ctx.sendMessage({temperature:25});});', lang: 'javascript' } }
   const api = { productCode: async () => ({ status: 200, result: structuredClone(stored) }),
+    getTransparentCodecSupports: async () => ({ status: 200, result: [{ id: 'jsr223' }] }),
     saveProductCode: async (_id, value) => { stored = JSON.parse(JSON.stringify(value)); return { status: 200 } },
     testCode: async () => ({ status: 200, result: { success: true, outputs: [{ temperature: 25 }] } }),
   }
@@ -234,43 +235,60 @@ test('leave confirmation distinguishes closing, discarding and saving, and stays
   scope.stop()
 })
 
-test('product edits, saves and debugs JavaScript regardless of the previously configured provider', async () => {
-  for (const stored of [
-    { provider: 'jsr223', configuration: { script: 'product-script', lang: 'javascript', custom: 1 } },
-    { provider: 'modbus', configuration: { mapping: { properties: [] } } },
-    { provider: 'unknown', configuration: { custom: 1 } },
-  ]) {
-    const requests = []
-    let configured = structuredClone(stored)
-    const api = { productCode: async () => ({ status: 200, result: structuredClone(configured) }),
-      saveProductCode: async (...args) => { requests.push(['save', ...args]); configured = structuredClone(args[1]); return { status: 200 } },
+test('product edits, saves and debugs with the actual provider and configuration', async () => {
+  const cases = [
+    { provider: 'jsr223', configuration: { script: 'saved-script', lang: 'javascript', custom: 1 }, edit: 'edited-script' },
+    { provider: 'custom', configuration: { format: 'csv' }, edit: '{"format":"json"}' },
+    { provider: 'modbus', configuration: { mapping: { properties: [] } }, edit: '{}' },
+    { provider: 'unknown', configuration: { custom: 1 }, edit: '{}' },
+  ]
+  for (const { provider, configuration, edit } of cases) {
+    const requests = [], messages = []
+    let stored = { provider, configuration }
+    const api = { productCode: async () => ({ status: 200, result: structuredClone(stored) }),
+      getTransparentCodecSupports: async () => ({ status: 200, result: [{ id: provider === 'unknown' ? 'modbus' : provider }, { id: 'jsr223' }] }),
+      saveProductCode: async (...args) => { requests.push(['save', ...args]); stored = args[1]; return { status: 200 } },
       testCode: async (...args) => { requests.push(['debug', ...args]); return { status: 200, result: { success: true } } },
     }
     const productCodec = await load('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', { 'api/instance': api })
     const { useProductDataAnalysis } = await load('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', {
       useProductCodec: productCodec, 'api/instance': api,
       'store/product': { useProductStore: () => ({ current: { id: 'product', transportProtocol: 'MQTT' } }) },
-      '@jetlinks-web-core/store': { useAuthStore: () => ({ hasPermission: () => true }) }, 'utils/comm': { onlyMessage() {} },
+      '@jetlinks-web-core/store': { useAuthStore: () => ({ hasPermission: () => true }) }, 'utils/comm': { onlyMessage: (...args) => messages.push(args) },
     })
     const scope = vue.effectScope(), s = scope.run(() => useProductDataAnalysis())
-    await s.getProductCode()
-    assert.ok(s.editorValue.value)
-    assert.equal(requests.length, 0)
-    assert.deepEqual(configured, stored)
-    s.editorValue.value = 'edited-script'
-    await s.save(); await tick()
-    assert.equal(requests.length, 1)
-    assert.equal(requests[0][0], 'save')
-    assert.equal(requests[0][1], 'product')
-    const expected = { provider: 'jsr223', configuration: { script: 'edited-script', lang: 'javascript' } }
-    assert.deepEqual(JSON.parse(JSON.stringify(requests[0][2])), expected)
-    assert.equal(s.editorValue.value, 'edited-script')
-    s.topic.value = '/report'; s.simulation.value = 'raw'
-    s.debug(); await tick()
-    assert.equal(requests[1][0], 'debug')
-    assert.equal(requests[1][1].provider, 'jsr223')
-    assert.deepEqual(JSON.parse(JSON.stringify(requests[1][1].configuration)), expected.configuration)
-    scope.stop()
+    try {
+      await s.getProductCode()
+      assert.equal(s.codecProvider.value, provider === 'modbus' ? '' : provider)
+      assert.equal(requests.length, 0)
+      s.topic.value = '/report'; s.simulation.value = 'raw'
+      if (provider === 'custom') {
+        for (const invalid of ['{', '[]', 'null']) {
+          s.editorValue.value = invalid
+          await s.save()
+          s.debug()
+          await tick()
+          assert.equal(requests.length, 0)
+          assert.deepEqual(messages.at(-1), ['InstanceDeviceAccess.codecDebug.jsonInvalid', 'error'])
+        }
+      }
+      s.editorValue.value = edit
+      await s.save()
+      s.debug()
+      await tick()
+      if (provider === 'unknown' || provider === 'modbus') {
+        assert.equal(s.canWriteCodec.value, false)
+        assert.deepEqual(requests, [])
+      } else {
+        const expected = { provider, configuration: provider === 'jsr223' ? { ...configuration, script: edit } : JSON.parse(edit) }
+        assert.deepEqual(JSON.parse(JSON.stringify(requests)), [
+          ['save', 'product', expected],
+          ['debug', { ...expected, headers: { topic: '/report' }, payload: 'raw' }],
+        ])
+      }
+    } finally {
+      scope.stop()
+    }
   }
 })
 

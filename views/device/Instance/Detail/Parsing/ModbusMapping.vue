@@ -14,17 +14,23 @@
 
       <!-- ===== 右侧：调试（sticky，不随页面滚动离开视区） ===== -->
       <aside class="mm-main-right">
-    <div class="mm-debug">
-      <DeviceDetailTabs size="small">
-        <a-tab-pane key="decode" :tab="t('ModbusMapping.ui.decodeTab')">
-          <DecodePanel :model="decodeView" />
-        </a-tab-pane>
-
-        <a-tab-pane key="encode" :tab="t('ModbusMapping.ui.encodeTab')">
-          <EncodePanel :model="encodeView" />
-        </a-tab-pane>
-      </DeviceDetailTabs>
-    </div>
+        <div class="mm-debug">
+          <a-segmented
+            v-model:value="debugMode"
+            :options="debugModes"
+            :aria-label="t('Parsing.mod.debugTitle')"
+            role="group"
+            block
+            size="small"
+            class="mm-debug-modes"
+          />
+          <div v-show="debugMode === 'decode'">
+            <DecodePanel :model="decodeView" />
+          </div>
+          <div v-if="hasOpenedEncode" v-show="debugMode === 'encode'">
+            <EncodePanel :model="encodeView" />
+          </div>
+        </div>
       </aside>
     </div>
 
@@ -35,7 +41,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import DeviceDetailTabs from '@device-manager-ui/views/device/components/DeviceDetailTabs.vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useModbusMapping } from './modbus/useModbusMapping'
 import MappingTable from './modbus/mapping/MappingTable.vue'
@@ -47,6 +53,14 @@ import FillMappingModal from './modbus/debug/FillMappingModal.vue'
 defineOptions({ name: 'ModbusMapping' })
 const props = defineProps<{ thingId?: string; productId?: string }>()
 const { t, locale } = useI18n()
+const debugMode = ref<'decode' | 'encode'>('decode')
+const debugModes = computed(() => [
+  { value: 'decode', label: t('ModbusMapping.ui.decodeTab') },
+  { value: 'encode', label: t('ModbusMapping.ui.encodeTab') },
+])
+// 保持原先的懒加载与保留行为：首次切到编码时挂载，之后切换只隐藏。
+const hasOpenedEncode = ref(false)
+watch(debugMode, mode => { if (mode === 'encode') hasOpenedEncode.value = true })
 const { mappingView, decodeView, encodeView, fillView, splitLayout, mappingConfiguration, mappingEditor, reloadConfig } =
   useModbusMapping(props)
 const { mmMainResizeRef, leftMainPercent, onMmMainSplitterMouseDown } = splitLayout

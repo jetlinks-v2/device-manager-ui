@@ -96,16 +96,25 @@
   border: 1px solid #f0f0f0;
   border-radius: 4px;
   overflow: hidden;
+}
 
-  :deep(.device-detail-tabs > .ant-tabs-nav) {
-    margin-bottom: 0;
-    padding: 0;
-    background: #fafafa;
+.mm-debug-modes {
+  :deep(.ant-segmented-item) {
+    display: grid;
+    place-items: center;
   }
-
-  :deep(.ant-tabs-nav-list) { width: 100%; }
-  :deep(.ant-tabs-tab) { flex: 1; min-width: 0; justify-content: center; }
-  :deep(.ant-tabs-tab-btn) { white-space: normal; text-align: center; }
+  :deep(.ant-segmented-item-label) {
+    width: 100%;
+    min-height: 0;
+    padding: 4px 8px;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  :deep(.ant-segmented-item-input:focus-visible + .ant-segmented-item-label) {
+    outline: 2px solid var(--jet-theme-primary);
+    outline-offset: -2px;
+  }
 }
 
 
