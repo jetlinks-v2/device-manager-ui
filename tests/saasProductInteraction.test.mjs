@@ -495,6 +495,34 @@ test('readonly metric rows hide add/delete and render values without editors', a
   assert.doesNotMatch(html, /<button|<input/)
 })
 
+test('product summary keeps supported header actions visible without granting denied permissions', async () => {
+  const file = 'views/device/Product/Detail/components/ProductDetailSummary.vue'
+  const PermissionButton = {
+    props: ['hasPermission', 'disabled', 'tooltip'],
+    setup: (props, { slots }) => () => vue.h('button', {
+      disabled: !props.hasPermission || props.disabled,
+      title: props.hasPermission ? props.tooltip?.title : 'no-permission',
+    }, slots.default?.()),
+  }
+  for (const [canUpdate, canAction, canDelete, state] of [[false, false, false, 1], [true, true, true, 1], [true, true, true, 0]]) {
+    const html = await render(file, {
+      product: { ...row, state }, showLifecycle: true, canUpdate, canAction, canDelete,
+      name: row.name, hasDevices: true, canViewDevices: false,
+    }, {
+      DetailHeader: { setup: (_, { slots }) => () => vue.h('header', slots.actions?.()) },
+      'j-permission-button': PermissionButton,
+    })
+    const buttons = [...html.matchAll(/<button([^>]*)>([^<]+)<\/button>/g)]
+    assert.deepEqual(buttons.map(([, , label]) => label.trim()), [
+      'Product.index.660348-13', state === 1 ? 'Detail.index.478940-3' : 'Product.index.660348-16', 'Product.index.660348-20',
+    ])
+    assert.deepEqual(buttons.map(([, attrs]) => /\bdisabled\b/.test(attrs)), [!canUpdate, !canAction, !canDelete || state !== 0])
+    const deleteTitle = !canDelete ? 'no-permission' : state === 1 ? 'Product.index.660348-21' : 'Product.index.660348-20'
+    assert.ok(buttons[2][1].includes(`title="${deleteTitle}"`))
+  }
+})
+
+
 test('product summary hides lifecycle controls without hiding status or device navigation', async () => {
   const file = 'views/device/Product/Detail/components/ProductDetailSummary.vue'
   for (const showLifecycle of [true, false]) {

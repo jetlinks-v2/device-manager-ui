@@ -21,30 +21,31 @@
         <DetailMetaItem kind="model" :label="$t('Product.detail.model')" :value="model || $t('comm.table.empty')" :tooltip="model" />
       </template>
       <template #actions>
-      <j-permission-button v-if="canUpdate" type="default" :hasPermission="canUpdate" @click="emit('edit')">
-        <template #icon><AIcon type="EditOutlined" /></template>
-        {{ $t('Product.index.660348-13') }}
-      </j-permission-button>
-      <j-permission-button
-        v-if="showLifecycle !== false"
-        type="primary"
-        :hasPermission="canAction"
-        :popConfirm="{ title: product.state === 1 ? $t('Detail.index.478940-0') : $t('Detail.index.478940-1'), onConfirm: () => emit('toggle-state') }"
-      >
-        {{ product.state === 1 ? $t('Detail.index.478940-3') : $t('Product.index.660348-16') }}
-      </j-permission-button>
-      <j-permission-button
-        v-if="canDelete"
-        type="default"
-        danger
-        :hasPermission="canDelete"
-        :disabled="product.state !== 0"
-        :tooltip="{ title: product.state !== 0 ? $t('Product.index.660348-21') : $t('Product.index.660348-20') }"
-        :popConfirm="{ title: $t('Product.index.660348-22'), onConfirm: () => emit('delete') }"
-      >
-        <template #icon><AIcon type="DeleteOutlined" /></template>
-        {{ $t('Product.index.660348-20') }}
-      </j-permission-button>
+        <DetailActionPopupBoundary>
+          <j-permission-button type="default" :hasPermission="canUpdate" @click="emit('edit')">
+            <template #icon><AIcon type="EditOutlined" /></template>
+            {{ $t('Product.index.660348-13') }}
+          </j-permission-button>
+          <j-permission-button
+            v-if="showLifecycle !== false"
+            type="primary"
+            :hasPermission="canAction"
+            :popConfirm="{ title: product.state === 1 ? $t('Detail.index.478940-0') : $t('Detail.index.478940-1'), onConfirm: () => emit('toggle-state') }"
+          >
+            {{ product.state === 1 ? $t('Detail.index.478940-3') : $t('Product.index.660348-16') }}
+          </j-permission-button>
+          <j-permission-button
+            type="default"
+            danger
+            :hasPermission="canDelete"
+            :disabled="product.state !== 0"
+            :tooltip="{ title: product.state !== 0 ? $t('Product.index.660348-21') : $t('Product.index.660348-20') }"
+            :popConfirm="{ title: $t('Product.index.660348-22'), onConfirm: () => emit('delete') }"
+          >
+            <template #icon><AIcon type="DeleteOutlined" /></template>
+            {{ $t('Product.index.660348-20') }}
+          </j-permission-button>
+        </DetailActionPopupBoundary>
       </template>
     </DetailHeader>
   </ContentPanel>
@@ -60,6 +61,7 @@ import { getI18nText } from '../../../../../utils/i18n'
 import DetailHeader from '@jetlinks-web-core/components/DetailHeader/index.vue'
 import DetailMetaItem from '@jetlinks-web-core/components/DetailMetaItem'
 import StatusTag from '@jetlinks-web-core/components/StatusTag/index.vue'
+import DetailActionPopupBoundary from '../../../components/DetailActionPopupBoundary.vue'
 
 const props = withDefaults(defineProps<{ product: Partial<ProductItem>; canUpdate: boolean; canAction: boolean; showLifecycle?: boolean; canDelete: boolean; canViewDevices: boolean }>(), { showLifecycle: true })
 const emit = defineEmits<{ (e: 'back'): void; (e: 'edit'): void; (e: 'toggle-state'): void; (e: 'delete'): void; (e: 'view-devices'): void }>()
