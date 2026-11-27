@@ -1,7 +1,7 @@
 <template>
   <span v-if="loading" class="plugin-runtime-loading" role="status" :aria-label="t('pluginRuntime.loadingState')"><a-skeleton-input active size="small" /></span>
   <span v-else class="plugin-runtime-status" :style="{ color }">
-    <slot name="icon" :icon="icon"><AIcon class="plugin-runtime-status__icon" :type="icon" aria-hidden="true" /></slot>
+    <AIcon class="plugin-runtime-status__icon" :type="icon" aria-hidden="true" />
     <span class="plugin-runtime-status__label">{{ t(`pluginRuntime.${status.state}`) }}</span>
     <span v-if="status.ready" class="plugin-runtime-count">{{ t('pluginRuntime.effectiveNodes', { count: status.ready }) }}</span>
     <a-tooltip v-if="status.uncertain" :title="t('pluginRuntime.incomplete')"><AIcon class="plugin-runtime-status__icon" type="ClockCircleOutlined" /></a-tooltip>

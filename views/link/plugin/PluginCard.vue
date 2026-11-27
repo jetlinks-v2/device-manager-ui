@@ -5,28 +5,25 @@
     <template #subtitle><span class="plugin-card__subtitle" :title="summary.subtitle">{{ summary.subtitle }}</span></template>
     <template v-if="summary.description" #description><span class="plugin-card__description">{{ summary.description }}</span></template>
     <template #status>
-      <a-dropdown :trigger="['click']" placement="bottomRight">
+      <a-dropdown v-model:open="menuOpen" :trigger="['click']" placement="bottomRight" @open-change="open => open && emit('inspect', false)">
         <a-button type="text" size="small" :aria-label="t('pluginRuntime.actions')" @click.stop><AIcon type="EllipsisOutlined" /></a-button>
         <template #overlay>
           <a-menu @click="({ domEvent }) => domEvent.stopPropagation()">
             <a-menu-item v-for="action in actions" :key="action.key">
-              <j-permission-button type="text" :danger="action.key === 'delete'" :disabled="action.disabled"
+              <j-permission-button type="text" size="small" :style="{ width: '100%', height: '24px', padding: 0, textAlign: 'left', background: 'transparent' }" :danger="action.key === 'delete'" :disabled="action.disabled"
                 :has-permission="`${permission}:${action.key}`" :pop-confirm="action.popConfirm" :tooltip="action.tooltip"
-                @click.stop="action.onClick?.()"><template #icon><AIcon :type="action.icon" /></template>{{ action.text }}</j-permission-button>
+                @click.stop="menuOpen = false; action.onClick?.()"><template #icon><AIcon :type="action.icon" /></template>{{ action.text }}</j-permission-button>
             </a-menu-item>
           </a-menu>
         </template>
       </a-dropdown>
     </template>
     <template #footer>
-      <RuntimeStatus :status="status" :loading="loading">
-        <template #icon="{ icon }">
-          <a-popover :open="inspectionOpen" :trigger="['hover', 'focus', 'click']" placement="topLeft" :mouse-enter-delay="0.15" :mouse-leave-delay="0.15" destroy-tooltip-on-hide @open-change="emit('inspect', $event)">
-            <template #content><RuntimePopover v-if="inspection" :name="summary.title" :runtime="inspection" :can-view-logs="canViewLogs" @refresh="emit('refresh')" @retry="emit('retry', $event)" @logs="emit('logs', $event)" @close="emit('inspect', false)" /></template>
-            <button type="button" class="plugin-card__status-trigger" :aria-label="`${summary.title} · ${t(`pluginRuntime.${status.state}`)}`" :aria-expanded="inspectionOpen" @click.stop @keydown.stop @keydown.esc="emit('inspect', false)"><AIcon :type="icon" aria-hidden="true" /></button>
-          </a-popover>
-        </template>
-      </RuntimeStatus>
+      <RuntimeStatus v-if="loading" :status="status" loading />
+      <a-popover v-else :open="inspectionOpen" :trigger="['hover', 'focus', 'click']" placement="topLeft" :mouse-enter-delay="0.15" :mouse-leave-delay="0.15" destroy-tooltip-on-hide @open-change="inspect">
+        <template #content><RuntimePopover v-if="inspection" :name="summary.title" :runtime="inspection" :can-view-logs="canViewLogs" @refresh="emit('refresh')" @retry="emit('retry', $event)" @logs="emit('logs', $event)" @close="inspect(false)" /></template>
+        <button type="button" class="plugin-card__status-trigger" :aria-label="`${summary.title} · ${t(`pluginRuntime.${status.state}`)}`" :aria-expanded="inspectionOpen" @click.stop @keydown.stop @keydown.esc="inspect(false)"><RuntimeStatus :status="status" /></button>
+      </a-popover>
     </template>
   </CardSummary>
   </div>
@@ -57,6 +54,11 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ inspect: [open: boolean]; visibility: [visible: boolean]; refresh: []; retry: [node: PluginRuntimeInfo]; logs: [serverId: string] }>()
 const { t } = useI18n()
+const menuOpen = ref(false)
+function inspect(open: boolean) {
+  if (open) menuOpen.value = false
+  emit('inspect', open)
+}
 const element = ref<HTMLElement>()
 useIntersectionObserver(element, ([entry]) => emit('visibility', !!entry?.isIntersecting))
 onScopeDispose(() => emit('visibility', false))
@@ -75,7 +77,7 @@ const summary = computed<CardSummaryData>(() => ({
 .plugin-card__name { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .plugin-card__description { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; color:var(--ink-3); font-size:var(--fs-12,12px); line-height:1.6; overflow-wrap:anywhere; }
 .plugin-card__subtitle { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--ink-3); font-size:12px; }
-.plugin-card__status-trigger { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; margin:calc(var(--space-3) / -4) calc(var(--space-3) / -2); padding:0; border:0; border-radius:var(--r-1); background:transparent; color:inherit; font-size:12px; cursor:pointer; }
+.plugin-card__status-trigger { display:flex; align-items:center; min-width:0; width:calc(100% + var(--space-4) * 2); margin:calc(var(--space-2) * -1) calc(var(--space-4) * -1); padding:var(--space-2) var(--space-4); border:0; background:transparent; color:inherit; font:inherit; text-align:left; line-height:18px; cursor:pointer; }
 .plugin-card__status-trigger:hover { background:var(--bg); }
-.plugin-card__status-trigger:focus-visible { outline:none; box-shadow:var(--ring-focus); }
+.plugin-card__status-trigger:focus-visible { outline:var(--jet-theme-stroke-width) solid var(--accent); outline-offset:calc(var(--space-1) * -1); }
 </style>

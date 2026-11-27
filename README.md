@@ -34,4 +34,4 @@
 
 ## 插件安装与运行观测
 
-`views/link/plugin/` 使用公共卡片和 `VirtualScroll`，按 `createTime / id` 游标分段读取插件配置。只对可见插件共享采样；底栏在首份采样返回前按插件展示骨架屏，后台刷新保留已有状态，读取失败结束加载并显示未知。状态图标 hover / focus 展示生效节点、运行实例预览及当前问题，浮层打开时按需读取实例、关闭即取消，不使用详情抽屉。驱动是否可用按当前修订的真实宿主生效结果判断，不适用节点不计为故障；节点重试和已有日志入口仍由实际 owner 控制权限。完整接口、宿主与部署边界见 workspace 的 `modules/jetlinks-components/plugin-component/docs/plugin-runtime-management.md`。
+`views/link/plugin/` 使用公共卡片和 `VirtualScroll`，按 `createTime / id` 游标分段读取插件配置。只对可见插件共享采样；底栏在首份采样返回前按插件展示骨架屏，后台刷新保留已有状态，读取失败结束加载并显示未知。整个底栏状态区域（含图标、文字与节点数）hover / focus 展示生效节点、运行实例预览及当前问题，点击和键盘也可进入；浮层打开时按需读取实例、关闭即取消，不使用详情抽屉。更多操作菜单沿用紧凑权限按钮，保留原确认与禁用语义；菜单与状态浮层互斥显示。驱动是否可用按当前修订的真实宿主生效结果判断，不适用节点不计为故障；节点重试和已有日志入口仍由实际 owner 控制权限。完整接口、宿主与部署边界见 workspace 的 `modules/jetlinks-components/plugin-component/docs/plugin-runtime-management.md`。
