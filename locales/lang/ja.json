@@ -25,6 +25,8 @@
 
   "Product.codec.loadFailed": "データ解析設定の読み込みに失敗しました",
   "Product.codec.empty": "データ解析設定はありません",
+  "Product.codec.noSupportedProvider": "この環境で製品に利用できるパーサーはありません",
+  "Product.codec.providerUnavailable": "設定済みのパーサー {provider} はこの環境で利用できません。設定は閲覧のみ可能です。",
 
   "UnifiedDeviceList.collapseScope": "エリア／グループを折りたたむ",
   "UnifiedDeviceList.expandScope": "エリア／グループを展開",

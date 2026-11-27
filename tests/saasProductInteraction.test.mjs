@@ -288,6 +288,8 @@ test('changed Vue components compile their scripts and templates', () => {
     'views/device/components/Metadata/Base/components/Properties/OtherSetting.vue',
     'views/device/components/Metadata/Base/components/Properties/Metrics/Metrics.vue',
     'views/device/Product/Detail/DataAnalysis/index.vue',
+    'views/device/Product/Detail/index.vue',
+    'views/device/Instance/Detail/Parsing/ModbusMapping.vue',
     'views/device/Product/Detail/DeviceAccess/ProductAccessFields.vue',
     'views/device/Product/Detail/components/ProductDetailSummary.vue',
     'views/device/Product/Detail/components/ProductAlarmConfigTab.vue',
@@ -368,32 +370,119 @@ test('metadata configuration popup keeps the existing button and hides confirmat
   }
 })
 
-test('product parsing always edits JavaScript and uses its template when the response has no script', async () => {
-  for (const isProject of [true, false]) {
-    let response
-    const { useProductCodec } = loadHook('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', {
-      vue, '../../../../../api/instance': { productCode: async () => response },
-      '@jetlinks-web-core/utils/consts': { isProject },
-    })
-    const state = useProductCodec(() => 'product', 'default-template')
-    response = { status: 200, result: { provider: 'jsr223', configuration: { script: 'codec.onUpstream(handler)', custom: 1 } } }
-    await state.getProductCode()
-    assert.equal(state.editorValue.value, 'codec.onUpstream(handler)')
-    assert.deepEqual(state.buildProductCode(), { provider: 'jsr223', configuration: { script: 'codec.onUpstream(handler)', lang: 'javascript' } })
-    for (const result of [null, { provider: 'modbus', configuration: { mapping: { address: 12 } } }, { provider: 'unknown', configuration: {} }]) {
-      response = { status: 200, result }
-      await state.getProductCode()
-      assert.equal(state.editorValue.value, 'default-template')
-      state.editorValue.value = 'edited-script'
-      assert.deepEqual(state.buildProductCode(), { provider: 'jsr223', configuration: { script: 'edited-script', lang: 'javascript' } })
-    }
-    response = { status: 500 }
-    await state.getProductCode()
+test('product parsing excludes device Modbus without falling back from an existing configuration', async () => {
+  const js = { id: 'jsr223', name: 'JavaScript' }
+  const modbus = { id: 'modbus', name: 'Modbus' }
+  const custom = { id: 'custom', name: 'Custom' }
+  let response, supports
+  const { useProductCodec } = loadHook('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', {
+    vue, '../../../../../api/instance': { productCode: async () => response, getTransparentCodecSupports: async () => supports },
+  })
+  const state = useProductCodec(() => 'product', 'default-template')
+  const load = async (result, providers) => {
+    response = { status: 200, result }
+    supports = { status: 200, result: providers }
+    await state.getProductCode(true)
+  }
+  const savedModbus = { provider: 'modbus', configuration: { mapping: { properties: [] } } }
+  for (const result of [null, savedModbus]) {
+    await load(result, [modbus])
+    assert.deepEqual(state.codecProviders.value, [])
+    assert.equal(state.codecProvider.value, '')
+    assert.equal(state.editorValue.value, '')
+    assert.equal(state.buildProductCode(), undefined)
+  }
+  await load(savedModbus, [js, modbus])
+  state.selectProvider('jsr223')
+  assert.equal(state.codecProvider.value, '')
+  assert.equal(state.buildProductCode(), undefined)
+
+  await load(null, [modbus, js, custom])
+  assert.deepEqual(state.codecProviders.value.map(({ id }) => id), ['jsr223', 'custom'])
+  assert.equal(state.codecProvider.value, 'jsr223')
+  assert.equal(state.editorValue.value, 'default-template')
+  state.selectProvider('modbus')
+  assert.equal(state.codecProvider.value, 'jsr223')
+  const savedCustom = { provider: 'custom', configuration: { format: 'csv' } }
+  await load(savedCustom, [js, modbus, custom])
+  assert.equal(state.isScript.value, false)
+  assert.deepEqual(state.buildProductCode(), savedCustom)
+
+  const savedScript = { provider: 'jsr223', configuration: { script: 'saved-script', custom: true } }
+  await load(savedScript, [js, modbus])
+  assert.deepEqual(state.buildProductCode(), { ...savedScript, configuration: { ...savedScript.configuration, lang: 'javascript' } })
+  await load(savedScript, [modbus])
+  assert.equal(state.codecProvider.value, 'jsr223')
+  assert.equal(state.editorValue.value, 'saved-script')
+  assert.equal(state.canUseCodec.value, false)
+  assert.equal(state.buildProductCode(), undefined)
+  await load({ provider: 'jsr223', configuration: {} }, [js, modbus])
+  assert.equal(state.editorValue.value, '')
+  await load({ configuration: { script: 'untyped' } }, [js, modbus])
+  assert.equal(state.codecProvider.value, '')
+  assert.equal(state.buildProductCode(), undefined)
+  await load(null, [])
+  assert.equal(state.codecProvider.value, '')
+  assert.equal(state.codecFailed.value, false)
+  assert.equal(state.buildProductCode(), undefined)
+
+  for (const failure of ['configuration', 'supports']) {
+    await load(null, [js])
+    if (failure === 'configuration') response = { status: 500 }
+    else supports = { status: 500 }
+    await state.getProductCode(true)
     assert.equal(state.codecFailed.value, true)
     assert.equal(state.codecLoading.value, false)
     assert.equal(state.editorValue.value, '')
+    assert.equal(state.buildProductCode(), undefined)
   }
 })
+
+test('product details and the editor share one provider probe and only expose product-capable parsing', async () => {
+  const { buildProductDetailTabs, resolveProductDetailTab } = loadHook('views/device/Product/Detail/detailTabs.ts', {})
+  const js = { id: 'jsr223', name: 'JavaScript' }
+  const modbus = { id: 'modbus', name: 'Modbus' }
+  let resolveSupports, calls = 0
+  const { createProductCodecSupport, useProductCodec } = loadHook('views/device/Product/Detail/DataAnalysis/useProductCodec.ts', {
+    vue, '../../../../../api/instance': {
+      productCode: async () => ({ status: 200, result: null }),
+      getTransparentCodecSupports: () => { calls++; return new Promise(resolve => { resolveSupports = resolve }) },
+    },
+  })
+  const support = createProductCodecSupport()
+  const protocol = { features: [{ id: 'transparentCodec' }] }
+  const tabs = product => buildProductDetailTabs(product, {
+    hasProductCodecProvider: Boolean(support.providers.value?.length), showAlarm: false, showFirmware: false, showDashboard: false, isNoCommunity: true,
+  })
+  assert.equal(resolveProductDetailTab('DataAnalysis', tabs(protocol)), 'Device')
+
+  const probe = support.load()
+  const editor = useProductCodec(() => 'product', 'new-script', support)
+  const getCode = editor.getProductCode()
+  assert.equal(calls, 1)
+  assert.equal(resolveProductDetailTab('DataAnalysis', tabs(protocol)), 'Device')
+  resolveSupports({ status: 200, result: [modbus, js] })
+  await Promise.all([probe, getCode])
+  assert.deepEqual(support.providers.value, [js])
+  assert.equal(resolveProductDetailTab('DataAnalysis', tabs(protocol)), 'DataAnalysis')
+  assert.equal(resolveProductDetailTab('DataAnalysis', tabs({})), 'Device')
+  await editor.getProductCode()
+  assert.equal(calls, 1)
+  assert.equal(editor.editorValue.value, 'new-script')
+
+  const reload = editor.getProductCode(true)
+  resolveSupports({ status: 200, result: [modbus] })
+  await reload
+  assert.equal(calls, 2)
+  assert.equal(editor.canUseCodec.value, false)
+  assert.equal(resolveProductDetailTab('DataAnalysis', tabs(protocol)), 'Device')
+})
+
+const supportedScriptCodec = {
+  isScript: true, editorLanguage: 'javascript', canUseCodec: true,
+  codecProvider: 'jsr223', configuredProvider: 'jsr223', codecProviders: [{ id: 'jsr223', name: 'JavaScript' }],
+  providerLabel: () => 'JavaScript',
+}
 
 test('product parsing editor and test/save actions are available in project and admin', async () => {
   const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
@@ -403,8 +492,8 @@ test('product parsing editor and test/save actions are available in project and 
   })
   for (const isProject of [true, false]) {
     const canUpdate = binding('views/device/Product/Detail/DataAnalysis/useProductDataAnalysis.ts', 'canUpdate', { isProject, computed: vue.computed, permissionStore: { hasPermission: () => true } }).value
-    const html = await render(file, { isProject, canUpdate, codecFailed: false, codecLoading: false,
-      editorValue: 'library-script', typescriptTip: {}, loading: false, isDisabled: false,
+    const html = await render(file, { ...supportedScriptCodec, isProject, canUpdate, canWriteCodec: canUpdate, codecFailed: false, codecLoading: false,
+      editorValue: 'library-script', typescriptTip: {}, loading: false, saving: false, isDisabled: false,
       productStore: { current: { transportProtocol: 'MQTT' } }, topicList: [], resStyle: {}, result: '', simulation: '', topic: '',
     }, { CodecDebugPanel: debugPanel, 'a-select': { props: ['value'], setup: (props, { slots }) => () => vue.h('select', { 'data-codec-type': props.value }, slots.default?.()) }, 'monaco-editor': { props: ['readOnly', 'modelValue'], setup: props => () => vue.h('pre', { 'data-readonly-editor': String(props.readOnly) }, props.modelValue) } })
     assert.match(html, /library-script/)
@@ -425,7 +514,7 @@ test('product script editing respects permission without a blocking provider war
   const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
   for (const canUpdate of [true, false]) {
     const html = await render(file, {
-      canUpdate, editorValue: 'default-script', codecLoading: false, codecFailed: false, loading: false,
+      ...supportedScriptCodec, canUpdate, canWriteCodec: canUpdate, editorValue: 'default-script', codecLoading: false, codecFailed: false, loading: false, saving: false,
       isDisabled: true, typescriptTip: {}, topicList: [], resStyle: {},
       productStore: { current: { transportProtocol: 'MQTT' } },
     }, { 'monaco-editor': { props: ['readOnly', 'language'], setup: props => () => vue.h('pre', {
@@ -438,6 +527,36 @@ test('product script editing respects permission without a blocking provider war
     assert.equal(html.includes('Product.codec.scriptOnly'), false)
     assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), canUpdate)
   }
+})
+
+test('product-specific non-script configuration keeps the JSON editor and unavailable providers remain read-only', async () => {
+  const file = 'views/device/Product/Detail/DataAnalysis/index.vue'
+  for (const supported of [true, false]) {
+    const html = await render(file, {
+      canUpdate: true, canWriteCodec: supported, canUseCodec: supported, codecProvider: 'custom', configuredProvider: 'custom',
+      isScript: false, editorLanguage: 'json', editorValue: '{"format":"csv"}', providerLabel: () => 'Custom',
+      codecLoading: false, codecFailed: false, loading: false, saving: false, isDisabled: true,
+      topicList: [], resStyle: {}, productStore: { current: { transportProtocol: 'MQTT' } },
+    }, { 'monaco-editor': { props: ['readOnly', 'language', 'modelValue'], setup: props => () => vue.h('pre', {
+      'data-readonly': String(props.readOnly), 'data-language': props.language,
+    }, props.modelValue) } })
+    assert.match(html, /Custom/)
+    assert.match(html, /data-language="json"/)
+    assert.match(html, /format/)
+    assert.doesNotMatch(html, /JavaScript/)
+    assert.match(html, new RegExp(`data-readonly="${!supported}"`))
+    assert.equal(html.includes('Product.codec.providerUnavailable'), !supported)
+    assert.equal(html.includes('IotDeviceDetail.parsing.saveConfig'), supported)
+    assert.equal(html.includes('IotDeviceDetail.scriptCodec.debug'), supported)
+  }
+})
+
+test('product parsing shows a safe empty state without an editor when only device Modbus is registered', async () => {
+  const html = await render('views/device/Product/Detail/DataAnalysis/index.vue', {
+    canUpdate: true, codecProvider: '', codecProviders: [], codecLoading: false, codecFailed: false, loading: false, saving: false,
+  }, { CloudEmpty: { props: ['description'], setup: props => () => vue.h('div', props.description) } })
+  assert.match(html, /Product.codec.noSupportedProvider/)
+  assert.doesNotMatch(html, /Modbus|JavaScript|product-codec__script|scriptCodec\.debug|parsing\.saveConfig/)
 })
 
 test('SaaS and private product rules use product edit permission and retain product-wide scope', () => {
@@ -494,6 +613,34 @@ test('readonly metric rows hide add/delete and render values without editors', a
   assert.match(html, /0/)
   assert.doesNotMatch(html, /<button|<input/)
 })
+
+test('product summary keeps supported header actions visible without granting denied permissions', async () => {
+  const file = 'views/device/Product/Detail/components/ProductDetailSummary.vue'
+  const PermissionButton = {
+    props: ['hasPermission', 'disabled', 'tooltip'],
+    setup: (props, { slots }) => () => vue.h('button', {
+      disabled: !props.hasPermission || props.disabled,
+      title: props.hasPermission ? props.tooltip?.title : 'no-permission',
+    }, slots.default?.()),
+  }
+  for (const [canUpdate, canAction, canDelete, state] of [[false, false, false, 1], [true, true, true, 1], [true, true, true, 0]]) {
+    const html = await render(file, {
+      product: { ...row, state }, showLifecycle: true, canUpdate, canAction, canDelete,
+      name: row.name, hasDevices: true, canViewDevices: false,
+    }, {
+      DetailHeader: { setup: (_, { slots }) => () => vue.h('header', slots.actions?.()) },
+      'j-permission-button': PermissionButton,
+    })
+    const buttons = [...html.matchAll(/<button([^>]*)>([^<]+)<\/button>/g)]
+    assert.deepEqual(buttons.map(([, , label]) => label.trim()), [
+      'Product.index.660348-13', state === 1 ? 'Detail.index.478940-3' : 'Product.index.660348-16', 'Product.index.660348-20',
+    ])
+    assert.deepEqual(buttons.map(([, attrs]) => /\bdisabled\b/.test(attrs)), [!canUpdate, !canAction, !canDelete || state !== 0])
+    const deleteTitle = !canDelete ? 'no-permission' : state === 1 ? 'Product.index.660348-21' : 'Product.index.660348-20'
+    assert.ok(buttons[2][1].includes(`title="${deleteTitle}"`))
+  }
+})
+
 
 test('product summary hides lifecycle controls without hiding status or device navigation', async () => {
   const file = 'views/device/Product/Detail/components/ProductDetailSummary.vue'

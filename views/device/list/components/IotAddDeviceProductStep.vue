@@ -72,7 +72,7 @@ const props = defineProps({
   filterTerms: { type: Array as PropType<ConditionFilterTerm[]>, default: () => [] },
   total: { type: Number, default: 0 },
   pageIndex: { type: Number, default: 0 },
-  pageSize: { type: Number, default: 6 },
+  pageSize: { type: Number, default: 4 },
   loading: { type: Boolean, default: false },
   message: { type: String, default: '' },
   // 产品选择统一把类型和接入方式放在名称下方，说明区不重复展示元数据。

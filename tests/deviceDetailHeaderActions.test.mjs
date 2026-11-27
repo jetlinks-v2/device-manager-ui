@@ -24,3 +24,13 @@ test('ordinary device summary fields opt into merged tooltips and keep the compl
   assert.match(header, /@click="openParentDevice"/)
   assert.match(header, /:disabled="!canOpenProductDetail"/)
 })
+
+test('device detail displays denied header actions as permission buttons without enabling their confirmations', async () => {
+  const actions = await readFile(new URL('../views/device/list/components/device-detail/DeviceDetailActions.vue', import.meta.url), 'utf8')
+  for (const permission of ['update', 'action', 'delete']) {
+    assert.match(actions, new RegExp(`<j-permission-button\\b[^>]*:hasPermission="permissions\\.${permission}"`))
+  }
+  assert.doesNotMatch(actions, /v-if="permissions\./)
+  assert.match(actions, /<a-popconfirm\b[^>]*:disabled="!permissions\.action \|\| !!busyAction"/)
+  assert.match(actions, /<a-popconfirm\b[^>]*:disabled="!permissions\.delete \|\| !disabled \|\| !!busyAction"/)
+})

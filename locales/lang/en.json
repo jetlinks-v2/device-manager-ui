@@ -27,6 +27,8 @@
 
   "Product.codec.loadFailed": "Failed to load data parsing configuration",
   "Product.codec.empty": "No data parsing configuration",
+  "Product.codec.noSupportedProvider": "No product parser is available in this environment",
+  "Product.codec.providerUnavailable": "The configured parser {provider} is unavailable in this environment. Its configuration is read-only.",
 
     "PropertyRules.diagram.intent": "Action intent only; execution depends on runtime state and is not performed in this example",
   "PropertyRules.diagram.process": "Calculation process",

@@ -15,6 +15,7 @@ import {
   type IotDeviceProductTemplate,
 } from '@device-manager-ui/api/device'
 import {
+  DEVICE_LIBRARY_TEMPLATE_PAGE_SIZE,
   installDeviceLibraryAndCreateDevice_api,
   probeDeviceLibraryCapability_api,
   queryDeviceLibraryTags_api,
@@ -113,12 +114,12 @@ export function useIotAddDeviceDrawer(props: IotAddDeviceDrawerProps, handlers: 
   const productCandidates = ref<IotDeviceProductTemplate[]>([])
   const productTotal = ref(0)
   const productPageIndex = ref(0)
-  const productPageSize = ref(6)
+  const productPageSize = ref(4)
   const productFilterTerms = ref<DeviceQueryTerm[]>([])
   const libraryTemplates = ref<DeviceTemplateProductInput[]>([])
   const libraryTagGroups = ref<IotDeviceLibraryTagGroup[]>([])
   const libraryPageIndex = ref(0)
-  const libraryPageSize = ref(4)
+  const libraryPageSize = ref(DEVICE_LIBRARY_TEMPLATE_PAGE_SIZE)
   const libraryTotal = ref(0)
   const libraryKeyword = ref('')
   const libraryTags = ref<string[]>([])
