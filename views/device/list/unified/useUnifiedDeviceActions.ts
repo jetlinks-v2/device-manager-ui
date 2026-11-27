@@ -20,7 +20,7 @@ export function useUnifiedDeviceActions(
   providerOf: (device: UnifiedDevice) => DeviceListProvider | undefined,
   refresh: () => void,
   activeProvider: Ref<DeviceListProvider | undefined>,
-  canDeviceAction: (action: 'add' | 'import' | 'enable' | 'delete') => boolean,
+  canDeviceAction: (action: 'add' | 'update' | 'import' | 'enable' | 'delete') => boolean,
 ) {
   const { t } = useI18n()
   const menu = useMenuStore()
@@ -200,12 +200,19 @@ export function useUnifiedDeviceActions(
     Modal.confirm({ title: t('Instance.index.133466-36'), okButtonProps: { danger: true }, onOk: () => execute(() => batchDeleteDevice(ids), clearBatchSelection) })
   }
   async function assignArea(areaId: string) {
+    if (!canDeviceAction('update')) return
     await execute(async () => {
       await reassignIotDevicesToArea(areaId, selected.value.map(device => ({ id: device.id, name: device.name, productName: device.productName, state: device.status })))
       assignAreaOpen.value = false
     }, clearBatchSelection)
   }
-  async function assignGroup(group: DeviceGroup) { await execute(async () => { await bindDeviceGroupDevices_api(group.id, [...selectedIds.value]); assignGroupOpen.value = false }, clearBatchSelection) }
+  async function assignGroup(group: DeviceGroup) {
+    if (!canDeviceAction('update')) return
+    await execute(async () => {
+      await bindDeviceGroupDevices_api(group.id, [...selectedIds.value])
+      assignGroupOpen.value = false
+    }, clearBatchSelection)
+  }
   function openDeviceImport(productId?: string) {
     if (isSaaS || !canDeviceAction('import')) return
     deviceImportProductId.value = productId

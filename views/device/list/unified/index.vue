@@ -74,8 +74,8 @@
 					    <a-button :disabled="!canDeviceBatchAction('enable') || !selectedIds.length || busy" @click="batchToggle('disable')">{{ t('IotDeviceList.action.batchDisable') }}</a-button>
 					    <a-button danger :disabled="!canDeviceBatchAction('delete') || !selectedIds.length || busy" @click="batchRemove">{{ t('Instance.index.133466-35') }}</a-button>
 					    </template>
-					    <a-button v-if="spaceAreaSupported !== false" :disabled="!selectedIds.length || busy || spaceAreaSupported !== true" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
-					    <a-button :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
+					    <a-button v-if="spaceAreaSupported !== false && canDeviceBatchAction('update')" :disabled="!selectedIds.length || busy || spaceAreaSupported !== true" @click="assignAreaOpen = true">{{ t('IotDeviceList.action.assignArea') }}</a-button>
+					    <a-button v-if="canDeviceBatchAction('update')" :disabled="!selectedIds.length || busy" @click="assignGroupOpen = true">{{ t('IotDeviceList.action.assignGroup') }}</a-button>
 				    </a-flex>
 				    <a-alert v-if="error || scopeLoadError" type="error" show-icon :message="error || t('UnifiedDeviceList.loadFailed')"><template #action><a-button @click="refresh">{{ t('UnifiedDeviceList.refresh') }}</a-button></template></a-alert>
 					    <j-pro-table class="unified-device-list__table pro-table__no-padding" mode="TABLE" row-key="id" table-layout="fixed" :columns="columns" :request="tableRequest" :params="tableParams" :alert-show="false" :row-selection="rowSelection" :scroll="tableScroll">
@@ -261,7 +261,7 @@ const deviceMenuCode = computed(() => getIotDeviceListMenuCode(route))
 const menu = useMenuStore()
 const authStore = useAuthStore()
 // 兼容历史菜单编码，但菜单访问不能代替操作按钮授权。
-function canDeviceBatchAction(action: 'add' | 'delete' | 'enable' | 'export' | 'import' | 'syncStatus') {
+function canDeviceBatchAction(action: 'add' | 'update' | 'delete' | 'enable' | 'export' | 'import' | 'syncStatus') {
   const menuCodes = new Set([deviceMenuCode.value, 'iot-user-device-list', 'iot-user/device/list', 'device/Instance'])
   const actionCodes = action === 'enable' ? ['enable', 'action'] : [action === 'syncStatus' ? 'action' : action]
   return actionCodes.some(actionCode =>

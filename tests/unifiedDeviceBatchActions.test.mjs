@@ -51,3 +51,66 @@ test('counts all devices without applying category access-provider terms', () =>
   assert.match(listSource, /countDevice_api\(\{\}\)\.then\(value => \['all', value\] as const\)/)
   assert.doesNotMatch(listSource, /allTerms/)
 })
+
+// Execute the production hook to verify that opening a dialog does not bypass a revoked grant.
+async function assignmentFixture(initialGrants = []) {
+  const vue = await import('vue')
+  const grants = vue.ref(initialGrants), calls = []
+  const imports = {
+    vue,
+    'vue-router': {useRoute: () => ({query: {}, path: '/resources/devices/list'}), useRouter: () => ({})},
+    'vue-i18n': {useI18n: () => ({t: key => key})},
+    'ant-design-vue': {Modal: {}},
+    '@jetlinks-web-core/store': {useMenuStore: () => ({}), useAuthStore: () => ({hasPermission: key => grants.value.includes(key)})},
+    '@jetlinks-web/utils': {onlyMessage() {}},
+    '../../../../api/device': {}, '../../../../api/instance': {},
+    '../../../../api/deviceGroup': {bindDeviceGroupDevices_api: async (...args) => calls.push(['group', ...args])},
+    '../hooks/iotDeviceAreaGroupBindings': {reassignIotDevicesToArea: async (...args) => calls.push(['area', ...args])},
+    '../hooks/useIotDeviceRouting': {resolveIotProjectId: () => 'project'},
+    '@jetlinks-web-core/utils/consts': {isSaaS: false},
+  }
+  const js = ts.transpileModule(actionsSource, {compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS}}).outputText
+  const module = {exports: {}}
+  new Function('require', 'module', 'exports', js)(id => {
+    if (!(id in imports)) throw new Error(`Unexpected dependency ${id}`)
+    return imports[id]
+  }, module, module.exports)
+  const scope = vue.effectScope()
+  const state = scope.run(() => module.exports.useUnifiedDeviceActions(
+    vue.ref([{id: 'device', name: 'Device'}]), vue.ref(['device']), () => calls.push(['clear']), () => undefined,
+    () => calls.push(['refresh']), vue.ref(), action => makePermissionCheck(grants.value)(action),
+  ))
+  return {grants, calls, state, stop: () => scope.stop()}
+}
+
+test('batch area/group assignment requires update; unrelated grants cannot submit', async () => {
+  for (const grant of ['view', 'add', 'delete', 'enable', 'action', 'export', 'import']) {
+    const f = await assignmentFixture([`iot-user-device-list:${grant}`])
+    try {
+      f.state.assignAreaOpen.value = true
+      f.state.assignGroupOpen.value = true
+      await f.state.assignArea('area')
+      await f.state.assignGroup({id: 'group'})
+      assert.deepEqual(f.calls, [], grant)
+    } finally {f.stop()}
+  }
+})
+
+test('authorized assignments preserve selected device IDs and reject revoked grants', async () => {
+  const f = await assignmentFixture(['iot-user-device-list:update'])
+  try {
+    await f.state.assignArea('area')
+    await f.state.assignGroup({id: 'group'})
+    assert.deepEqual(f.calls.filter(([action]) => ['area', 'group'].includes(action)), [
+      ['area', 'area', [{id: 'device', name: 'Device', productName: undefined, state: undefined}]],
+      ['group', 'group', ['device']],
+    ])
+    f.calls.length = 0
+    f.state.assignAreaOpen.value = true
+    f.state.assignGroupOpen.value = true
+    f.grants.value = []
+    await f.state.assignArea('other-area')
+    await f.state.assignGroup({id: 'other-group'})
+    assert.deepEqual(f.calls, [])
+  } finally {f.stop()}
+})
