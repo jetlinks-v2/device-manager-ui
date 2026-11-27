@@ -103,7 +103,12 @@
     background: #fafafa;
   }
 
-  :deep(.ant-tabs-nav-list) { width: 100%; }
+  :deep(.ant-tabs-nav-list) {
+    box-sizing: border-box;
+    width: 100%;
+    // Ant Design Vue 用整数宽度比较标签的小数像素边界，预留 1px 防止溢出误判。
+    padding-inline-end: 1px;
+  }
   :deep(.ant-tabs-tab) { flex: 1; min-width: 0; justify-content: center; }
   :deep(.ant-tabs-tab-btn) { white-space: normal; text-align: center; }
 }
