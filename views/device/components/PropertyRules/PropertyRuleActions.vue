@@ -8,6 +8,9 @@
       </template>
       <a-button ref="trigger" type="text" size="small" :aria-label="`${property.name || property.id} · ${$t('PropertyRules.diagram.show')}`" :aria-expanded="diagram.open" aria-haspopup="dialog" @click="toggleDiagram" @keydown.down.stop.prevent="focusDiagram" @keydown.esc.stop.prevent="escape"><AIcon type="PartitionOutlined" />{{ $t('PropertyRules.diagram.show') }}</a-button>
     </a-popover>
+    <a-tooltip v-if="scope.deviceId && canWrite && hasRules" :title="$t('PropertyRules.enabledHint')" :trigger="['hover', 'focus']">
+      <a-switch size="small" :checked="editor.draft?.enabled !== false" :disabled="!editor.editable" :checked-children="$t('PropertyRules.enabled')" :un-checked-children="$t('PropertyRules.disabled')" :aria-label="$t('PropertyRules.enabledFor', { name: property.name || property.id })" @change="editor.setEnabled($event === true)" />
+    </a-tooltip>
     <a-button v-if="canWrite && (editor.pendingSave || editor.saving)" type="text" size="small" :disabled="editor.saving" @click="editor.discard(); emit('discard')"><AIcon type="UndoOutlined" />{{ $t('PropertyRules.undo') }}</a-button>
     <a-button v-if="canWrite && (editor.pendingSave || editor.saveState !== 'idle')" type="text" size="small" class="rule-save" :class="`rule-save-${editor.saveState}`" :disabled="!editor.editable || editor.saveState === 'saved'" :aria-label="savePresentation.text" @click="editor.save"><AIcon :type="savePresentation.icon" :spin="editor.saving" /><span aria-live="polite">{{ savePresentation.text }}</span></a-button>
     <a-dropdown v-if="canClear || editor.hasOverride && editor.canSave" :trigger="['click']" :disabled="editor.saving || editor.loading || editor.blocked">

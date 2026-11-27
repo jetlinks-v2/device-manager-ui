@@ -42,7 +42,7 @@ export function usePropertyRules(props: { scope: RuleScope; properties: ThingMod
       const id = propertyIdOf(property)
       const own = deviceMap.get(id)
       const raw = own ?? productMap.get(id)
-      const source = own ? (isEmptyRule(own) ? 'disabled' : 'device') : raw ? 'product' : 'none'
+      const source = raw?.enabled === false ? 'disabled' : own ? (isEmptyRule(own) ? 'disabled' : 'device') : raw ? 'product' : 'none'
       const rule = parseRule(raw)
       return { id, property, name: propertyNameOf(property), raw, hasOverride: Boolean(own), source, rule,
         effects: summarizeRuleRows(rule, property, t) }
@@ -75,7 +75,7 @@ export function usePropertyRules(props: { scope: RuleScope; properties: ThingMod
   const rows = computed(() => orderRows(searchedRows.value.filter(matchesConfiguration)))
   const groups = computed(() => {
     const grouped = new Map<string, { id: string; name: string; rows: typeof rows.value; total: number; configured: number }>()
-    // Product counts retain explicit overrides; detail counts only effective rules before filtering.
+    // Counts describe configured rules, including retained chains that are switched off.
     for (const row of searchedRows.value) {
       const { groupId, groupName } = row.property.expands ?? {}
       const id = groupId ? `id:${groupId}` : groupName ? `name:${groupName}` : 'unclassified'

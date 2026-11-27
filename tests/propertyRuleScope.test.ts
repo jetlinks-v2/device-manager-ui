@@ -1720,3 +1720,67 @@ test('loading a different device never initializes editable cards from the previ
     assert.equal(next.blocked, false)
   } finally { view.cleanup() }
 })
+
+
+test('device rule switch persists configuration, survives reload and supports undo and reactivation', async () => {
+  const writes: Record<string, unknown>[] = []
+  let saved: ThingPropertyPreprocess | undefined
+  setAlarmRequestHandler(async (_url, body) => {
+    if (body.method === 'PUT') {
+      const { method, ...payload } = body
+      writes.push(payload)
+      saved = structuredClone(payload) as ThingPropertyPreprocess
+    }
+    return { result: [] }
+  })
+  const view = mountEditor(props => { props.snapshot = { hasOverride: true, raw: saved } })
+  try {
+    await settle()
+    assert.equal(view.editor.draft.value!.enabled, true, 'historical rules default to enabled')
+    const initial = JSON.stringify(view.editor.draft.value)
+    view.editor.setEnabled(false)
+    assert.equal(view.editor.displaySource.value, 'disabled')
+    assert.equal(view.editor.draft.value!.samplingEnabled, true)
+    assert.equal(view.editor.pendingSave.value, true)
+    view.editor.discard()
+    assert.equal(JSON.stringify(view.editor.draft.value), initial)
+    view.editor.setEnabled(false)
+    await view.editor.save()
+    assert.equal(writes[0].enabled, false)
+    assert.equal(saved?.configuration?.processors[0].configuration.ratio, 0.5)
+    assert.equal(view.editor.pendingSave.value, false)
+    await view.editor.load()
+    assert.equal(view.editor.displaySource.value, 'disabled')
+    assert.equal(view.editor.draft.value!.enabled, false)
+    assert.equal(view.editor.draft.value!.samplingEnabled, true)
+    const configuration = structuredClone(saved!.configuration)
+    view.editor.setEnabled(true)
+    await view.editor.save()
+    assert.equal(writes[1].enabled, true)
+    assert.deepEqual(saved!.configuration, configuration, 'reactivation keeps every saved processor parameter')
+    assert.equal(view.editor.displaySource.value, 'device')
+    view.props.scope.canUpdate = false
+    view.editor.setEnabled(false)
+    assert.equal(view.editor.draft.value!.enabled, true, 'read-only scopes cannot switch rules')
+  } finally { view.cleanup() }
+})
+
+test('disabled configured rules remain visible after refresh and do not inherit product configuration', async () => {
+  mountRuleWindow()
+  ruleRoute.query = {}
+  setAlarmRequestHandler(async url => ({ result: url.includes('/d1/')
+    ? [{ ...savedParts('temperature', 1), enabled: false }]
+    : [savedParts('temperature', 3)] }))
+  const { panel, unmount } = mountPanel({ presentation: 'detail', scope: { productId: 'p1', deviceId: 'd1' }, properties: [{ id: 'temperature' }] })
+  try {
+    await settle()
+    assert.equal(panel.rows.value.length, 1)
+    assert.equal(panel.rows.value[0].source, 'disabled')
+    assert.equal(panel.configuredCount.value, 1)
+    assert.equal(panel.unconfiguredCount.value, 0)
+    assert.equal(Object.keys(panel.rows.value[0].rule.nodes).length, 1)
+    await panel.load()
+    assert.equal(panel.rows.value[0].source, 'disabled')
+    assert.equal(Object.keys(panel.rows.value[0].rule.nodes).length, 1)
+  } finally { unmount(); Reflect.deleteProperty(globalThis, 'window') }
+})
