@@ -158,6 +158,8 @@ export interface DeviceAlarmTargetPage {
 }
 
 export interface ThingPropertyPreprocess {
+  /** Missing persisted values retain the historical enabled behavior. */
+  enabled?: boolean | null
   id?: string
   name?: string
   source?: DeviceAlarmSource | EnumLike

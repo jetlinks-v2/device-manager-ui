@@ -96,25 +96,21 @@
   border: 1px solid #f0f0f0;
   border-radius: 4px;
   overflow: hidden;
-}
 
-.mm-debug-modes {
-  :deep(.ant-segmented-item) {
-    display: grid;
-    place-items: center;
+  :deep(.device-detail-tabs > .ant-tabs-nav) {
+    margin-bottom: 0;
+    padding: 0;
+    background: #fafafa;
   }
-  :deep(.ant-segmented-item-label) {
+
+  :deep(.ant-tabs-nav-list) {
+    box-sizing: border-box;
     width: 100%;
-    min-height: 0;
-    padding: 4px 8px;
-    line-height: 1.4;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    // Ant Design Vue 用整数宽度比较标签的小数像素边界，预留 1px 防止溢出误判。
+    padding-inline-end: 1px;
   }
-  :deep(.ant-segmented-item-input:focus-visible + .ant-segmented-item-label) {
-    outline: 2px solid var(--jet-theme-primary);
-    outline-offset: -2px;
-  }
+  :deep(.ant-tabs-tab) { flex: 1; min-width: 0; justify-content: center; }
+  :deep(.ant-tabs-tab-btn) { white-space: normal; text-align: center; }
 }
 
 

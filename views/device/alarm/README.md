@@ -269,6 +269,14 @@ S 级局部修复：`hooks/useDeviceAlarmWorkspace.ts` 的操作包装只负责�
 - 浏览器验证边界：此前版本已验证 9200 的两列等大布局、添加/移除/撤销、1000×800 一列与内部无溢出。当前统一配置结构这一轮的 Chrome 扩展连接反复超时/Debugger unattached，未完成实际页面实测，不将旧截图作为本次效果证据。待连接恢复后，需核验已保存规则直接显示控件、编辑/撤销/保存后样式稳定、刷新后一致、筛选/折叠草稿保留和只读控件禁用；可从设备详情的“规则配置”Tab 进入。保存与恢复由真实 Vue hook + 模拟传输覆盖，本轮未写入真实设备规则、未实测消息发送。390×844 下既有全站侧栏不收起仍可能挤压详情区，外壳适配不在本次范围。
 - 实现自查：复用现有字段与保存模型，设备卡片通过 feature 内 hook 管理生命周期；未新增公共模型或后端协议。
 
+## 属性规则启停与清空
+
+运行时设备详情的属性规则通过 `enabled` 开关控制是否执行，未设置按启用处理。停用只修改启停字段，保留各规则项和参数，卡片仍展示并标记“不应用规则”；重新开启沿用保留的配置。开关沿用手动保存、撤销和离开保护。开关复用 Ant Tooltip，鼠标悬停或键盘聚焦时说明控制范围、停用保留配置、可重新开启及保存后生效。提示组件的脚本/模板编译、中英文 JSON 解析及差异检查通过；本次仅补充提示，复用既有构建和业务回归证据。“该设备不应用规则”原操作改名“清空规则”，继续清除全部规则项并保存空设备覆盖；“恢复产品规则”仍删除设备覆盖。仅修改 `runtime-ui/modules/device-manager-ui` 与公共预处理组件，不复制到运营端 `ui/`，不新增菜单、路由或权限。
+
+实施入口：`views/device/components/PropertyRules/codec.ts`、`usePropertyRuleEditor.ts`、`PropertyRuleActions.vue`、`usePropertyRules.ts` 及 `views/device/alarm/types.ts`。验证保存请求与回读、刷新后停用卡片可见、重新启用参数保留、撤销、只读权限及清空/恢复语义；后端契约见 `modules/jetlinks-components/things-component/README.md` 的“属性规则启停”。验证：Node 22.18.0 下 `node modules/device-manager-ui/scripts/test-alarm-workspace.mjs` 共 246 项，244 项通过，新增启停/回读/刷新/撤销/权限回归通过；另两项 `alarmButtonMenuPermissions.test.mjs` 失败，原因是既有菜单实际包含 `view`，而测试只预期 add/update/delete/handle，测试、baseMenu 和初始化过滤函数均未在本次修改。`pnpm --config.verify-deps-before-run=false build:modules device-manager-ui` 通过（5m4s，保留既有资源、CSS 和 chunk 警告）。完整 `pnpm --config.verify-deps-before-run=false exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 有 1731 条工作区诊断，本次修改的生产文件无诊断；模块无独立 lint 脚本，`git diff --check` 通过。
+
+9200 实际设备详情已核验开关关闭时标记“不应用规则”并保留过滤值 11，重新开启后值不变，更多菜单同时提供“清空规则”和“恢复产品规则”，撤销可清除本次临时草稿。浏览器未点击保存，未修改真实设备配置；保存传输由 Vue hook 回归与后端 PostgreSQL 持久化测试分别覆盖，配套部署后的 HTTP 保存和真实设备消息仍待联调。
+
 ## 通知已选名称按可用宽度展示
 
 - 目标与范围：S 级局部展示调整，仅修改运行时告警通知类型、通知对象的名称回显；空间足够时展示所有已选名称，超出一行空间时才显示 `+N`，悬停仍可查看完整名称。
