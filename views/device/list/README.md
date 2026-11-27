@@ -163,6 +163,14 @@
 
 验证限制：完整 `pnpm exec vue-tsc -p modules/device-manager-ui/tsconfig.json --noEmit` 被未改动的 `views/link/Certificate/type.d.ts:2` TS1005 语法错误阻断；另对上述 18 个 SFC 及其依赖运行定向 typecheck，本次文件无诊断，依赖链仍有既有类型与声明错误，不能据此宣称完整 typecheck 通过。工作区和模块未配置 lint 脚本。实际设备详情页的接口受 403 限制，本次浏览器对照使用模拟 API，尚未完成真实后端和设备联调。
 
+### 调试标签栏宽度
+
+设备详情共用的 `views/device/Instance/Detail/Parsing/modbus/layout.less` 为两个调试标签预留 1px 的测量余量，避免 Ant Design Vue 使用取整后的容器宽度与标签的小数像素坐标比较时误判溢出。
+
+原页面在 1394×900 视口复现「更多」按钮反复显隐，标签栏高度在 30px 与 52px 之间跳变。本地使用实际调试组件与模拟设备状态，在 1394×900 和 1024×768 视口完成 66 项布局与切换检查，覆盖中英日文、相邻宽度、分隔条拖动和窄屏堆叠。鼠标点击和键盘回车均可切换面板。
+
+模块根运行 `node --test tests/modbusMappingRules.test.mjs`，13 项通过。Scoped Less 编译、`git diff --check` 及设备管理模块生产构建通过，构建仍有资源路径、输出配置、循环分块、CSS 注释和分块体积告警。运行时工作区未配置独立 lint 脚本，`pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 仍报告 `jetlinks-web-core/src/api/account/center.ts` 等位置的类型诊断。实际设备详情页待部署后复验。
+
 
 ## 按部署方式配置设备搜索项（已实施）
 
