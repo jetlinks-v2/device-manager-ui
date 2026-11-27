@@ -23,16 +23,16 @@
         <p v-if="unsupportedCount" class="plugin-inspection__muted plugin-inspection__note">{{ t('pluginRuntime.unsupportedNodes', { count: unsupportedCount }) }}</p>
       </section>
       <section class="plugin-inspection__instances">
-        <h4>{{ t('pluginRuntime.instances') }}<span v-if="!runtime.pending && !runtime.instanceError">{{ runtime.instances.length }}{{ runtime.limitReached ? '+' : '' }}</span></h4>
+        <h4>{{ t('pluginRuntime.instances') }}<span v-if="!runtime.pending && !runtime.instanceError">{{ previewInstances.length }}{{ runtime.limitReached ? '+' : '' }}</span></h4>
         <p v-if="runtime.instanceError" class="plugin-inspection__problem" role="status">{{ runtime.instanceError }}</p>
-        <a-skeleton v-if="runtime.pending && !runtime.instances.length" active :title="false" :paragraph="{ rows: 1 }" />
-        <p v-else-if="!runtime.instances.length && !runtime.instanceError" class="plugin-inspection__muted">{{ t('pluginRuntime.noInstances') }}</p>
-        <div v-for="instance in runtime.instances.slice(0, 5)" :key="`${instance.serverId}:${instance.instanceKey}`" class="plugin-inspection__row">
+        <a-skeleton v-if="runtime.pending && !previewInstances.length" active :title="false" :paragraph="{ rows: 1 }" />
+        <p v-else-if="!previewInstances.length && !runtime.instanceError" class="plugin-inspection__muted">{{ t('pluginRuntime.noInstances') }}</p>
+        <div v-for="instance in previewInstances.slice(0, 5)" :key="`${instance.serverId}:${instance.instanceKey}`" class="plugin-inspection__row">
           <div class="plugin-inspection__identity"><span :title="instance.instanceKey">{{ instance.pluginId || instance.ownerId || instance.instanceKey }}</span><span class="plugin-inspection__state" :class="{ 'plugin-inspection__problem': !!instance.error }">{{ stateText(instance) }}<small v-if="isPreviousPluginRevision(instance)" class="plugin-inspection__previous">{{ t('pluginRuntime.previousInstance') }}</small></span></div>
           <p class="plugin-inspection__muted">{{ instance.serverId }}<template v-if="instance.ownerId && instance.ownerId !== instance.pluginId"> · {{ instance.ownerId }}</template></p>
           <p v-if="instance.error" class="plugin-inspection__problem">{{ instance.error }}</p>
         </div>
-        <p v-if="runtime.instances.length > 5 || runtime.limitReached" class="plugin-inspection__muted plugin-inspection__note">{{ t('pluginRuntime.instancePreview', { count: Math.min(5, runtime.instances.length) }) }}<template v-if="runtime.limitReached"> · {{ t('pluginRuntime.instanceLimit') }}</template></p>
+        <p v-if="previewInstances.length > 5 || runtime.limitReached" class="plugin-inspection__muted plugin-inspection__note">{{ t('pluginRuntime.instancePreview', { count: Math.min(5, previewInstances.length) }) }}<template v-if="runtime.limitReached"> · {{ t('pluginRuntime.instanceLimit') }}</template></p>
       </section>
     </div>
   </section>
@@ -44,13 +44,14 @@ import { useTimestamp } from '@vueuse/core'
 import { theme } from 'ant-design-vue'
 import { usePluginPermission } from '../../../hooks/usePermission'
 import type { PluginRuntimeInfo } from '../../../api/link/pluginRuntime'
-import { pluginRuntimeState, isPreviousPluginRevision, type PluginRuntimeInspection } from './runtimeState'
+import { pluginRuntimeState, isPreviousPluginRevision, pluginInstancePreview, type PluginRuntimeInspection } from './runtimeState'
 
 const props = defineProps<{ name: string; runtime: PluginRuntimeInspection; canViewLogs: boolean }>()
 const emit = defineEmits<{ refresh: []; retry: [node: PluginRuntimeInfo]; logs: [serverId: string]; close: [] }>()
 const { t } = useI18n(), { token } = theme.useToken()
 const permissionKey = usePluginPermission()
 const now = useTimestamp({ interval: 1000 })
+const previewInstances = computed(() => pluginInstancePreview(props.runtime.instances))
 const applicableNodes = computed(() => props.runtime.nodes.filter(node => node.status !== 'unsupported'))
 const unsupportedCount = computed(() => props.runtime.nodes.length - applicableNodes.value.length)
 const lastSample = computed(() => {

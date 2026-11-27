@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { pluginAvailability, pluginMetricRows, pluginRuntimeState, pluginRuntimeError, pluginDriverMetadata, isPreviousPluginRevision } from '../views/link/plugin/runtimeState.ts'
+import { pluginAvailability, pluginMetricRows, pluginRuntimeState, pluginRuntimeError, pluginDriverMetadata, isPreviousPluginRevision, pluginInstancePreview } from '../views/link/plugin/runtimeState.ts'
 import type { PluginRuntimeInfo } from '../api/link/pluginRuntime.ts'
 import { pluginListRequest } from '../api/link/pluginListQuery.ts'
 
@@ -76,10 +76,20 @@ test('package name and description stay on one host and missing package fields r
   assert.equal(metadata.driverName, 'Package name')
   assert.equal(metadata.driverDescription, undefined)
   assert.equal(pluginDriverMetadata([node('ready', true)], 'current'), undefined)
+  assert.equal(pluginDriverMetadata([{ ...node('ready', true), driverName: ' ', driverDescription: '  ' }], 'current'), undefined)
 })
 
 test('same-name instances from another revision remain visible with an explicit old-revision identity', () => {
   assert.equal(isPreviousPluginRevision({ desiredRevision: 'new', appliedRevision: 'old' }), true)
   assert.equal(isPreviousPluginRevision({ desiredRevision: 'new', appliedRevision: 'new' }), false)
   assert.equal(isPreviousPluginRevision({ desiredRevision: 'new' }), false)
+})
+
+test('normal stopped records leave the preview while failures, unknowns and genuinely running old revisions remain', () => {
+  const running = { ...node('ready', true), state: 'running' }
+  const stopped = { ...node('ready'), state: 'stopped' }
+  const failed = { ...stopped, error: 'StartFailure' }
+  const unknown = { ...node('unknown'), state: 'unknown' }
+  const previous = { ...running, desiredRevision: 'new', appliedRevision: 'old' }
+  assert.deepEqual(pluginInstancePreview([running, stopped, failed, unknown, previous]), [running, failed, unknown, previous])
 })

@@ -45,7 +45,7 @@ test('driver card keeps its configured label and displays the package-defined na
 })
 
 test('missing package descriptions have no placeholder or editable fallback while loading stays local', async () => {
-  for (const metadata of [undefined, { driverName: 'Declared name' }, { driverName: 'Declared name', driverDescription: '' }]) {
+  for (const metadata of [undefined, { driverName: 'Declared name' }, { driverName: 'Declared name', driverDescription: '' }, { driverName: 'Declared name', driverDescription: '   ' }]) {
     const html = await render({ metadata })
     assert.equal(html.includes('class="plugin-card__description"'), false)
     assert.equal(html.includes('Editable description'), false)

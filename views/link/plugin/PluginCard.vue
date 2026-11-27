@@ -3,12 +3,12 @@
   <CardSummary class="plugin-card__surface" :data="summary" :background-opacity="100" :interactive="false">
     <template #title><span class="plugin-card__title" :title="`${summary.title}\nID: ${data.id}`"><span class="plugin-card__type-icon" aria-hidden="true"><AIcon :type="getPluginTypeIcon(data.type)" /></span><span class="plugin-card__name">{{ summary.title }}</span></span></template>
     <template #subtitle><span class="plugin-card__subtitle" :title="summary.subtitle">{{ summary.subtitle }}</span></template>
-    <template v-if="loading || metadata?.driverName || metadata?.driverDescription" #meta>
+    <template v-if="loading || packageName || packageDescription" #meta>
       <div class="plugin-card__runtime">
         <a-skeleton-input v-if="loading" class="plugin-card__summary-loading" active size="small" />
-        <template v-else-if="metadata?.driverName || metadata?.driverDescription">
-          <span v-if="metadata.driverName" class="plugin-card__driver-name" :title="metadata.driverName">{{ metadata.driverName }}</span>
-          <span v-if="metadata.driverDescription" class="plugin-card__description" :title="metadata.driverDescription">{{ metadata.driverDescription }}</span>
+        <template v-else-if="packageName || packageDescription">
+          <span v-if="packageName" class="plugin-card__driver-name" :title="packageName">{{ packageName }}</span>
+          <span v-if="packageDescription" class="plugin-card__description" :title="packageDescription">{{ packageDescription }}</span>
         </template>
       </div>
     </template>
@@ -71,6 +71,8 @@ function inspect(open: boolean) {
 const element = ref<HTMLElement>()
 useIntersectionObserver(element, ([entry]) => emit('visibility', !!entry?.isIntersecting))
 onScopeDispose(() => emit('visibility', false))
+const packageName = computed(() => props.metadata?.driverName?.trim())
+const packageDescription = computed(() => props.metadata?.driverDescription?.trim())
 const summary = computed<CardSummaryData>(() => ({
   title: getI18nText(props.data, 'name') || props.data.id,
   subtitle: [props.typeLabel || props.data.type
@@ -79,13 +81,13 @@ const summary = computed<CardSummaryData>(() => ({
 }))
 </script>
 <style scoped>
-.plugin-card { height:calc(var(--plugin-card-row-height,184px) - 16px); min-width:0; }
+.plugin-card { height:calc(var(--plugin-card-row-height,192px) - 16px); min-width:0; }
 .plugin-card__surface { --panel-radius:var(--r-2,6px); --fs-h3:var(--fs-14,14px); --card-summary-footer-padding:8px 16px; border-color:var(--line); box-shadow:none; }
 .plugin-card__surface:hover { border-color:var(--accent); background:var(--accent-soft); box-shadow:none; }
 .plugin-card__title { display:flex; align-items:center; gap:var(--space-2); min-width:0; font-size:var(--fs-14,14px); font-weight:500; line-height:24px; }
 .plugin-card__type-icon { flex:none; color:var(--accent); font-size:14px; }
 .plugin-card__name { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.plugin-card__runtime { display:flex; flex-direction:column; gap:var(--space-1); width:100%; min-width:0; font-size:var(--fs-12,12px); line-height:18px; }
+.plugin-card__runtime { display:flex; flex-direction:column; gap:calc(var(--space-1) / 2); width:100%; min-width:0; padding-bottom:var(--space-2); font-size:var(--fs-12,12px); line-height:18px; }
 .plugin-card__driver-name { min-width:0; overflow:hidden; color:var(--ink-2); white-space:nowrap; text-overflow:ellipsis; }
 .plugin-card__description { display:-webkit-box; min-width:0; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; color:var(--ink-3); overflow-wrap:anywhere; }
 .plugin-card__summary-loading { height:18px; line-height:18px; overflow:hidden; }

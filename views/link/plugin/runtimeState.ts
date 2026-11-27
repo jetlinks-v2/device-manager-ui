@@ -22,6 +22,9 @@ export function pluginRuntimeState(row: Partial<Pick<PluginRuntimeInfo, 'status'
 export function isPreviousPluginRevision(row: Pick<PluginRuntimeInfo, 'desiredRevision' | 'appliedRevision'>) {
   return !!row.desiredRevision && !!row.appliedRevision && row.desiredRevision !== row.appliedRevision
 }
+export function pluginInstancePreview(instances: PluginRuntimeInfo[]) {
+  return instances.filter(row => (row.state || row.status) !== 'stopped' || !!row.error)
+}
 export function pluginAvailability(nodes: PluginRuntimeInfo[], revision?: string, now = Date.now()) {
   const fresh = nodes.filter(node => !node.receivedAt || now - node.receivedAt < 15000)
   const ready = fresh.filter(node => node.available && node.status === 'ready' && (!revision || node.appliedRevision === revision))
@@ -41,7 +44,7 @@ export function pluginDriverMetadata(nodes: PluginRuntimeInfo[], revision?: stri
   return nodes.find(node => node.status === 'ready' && node.available
     && (!revision || node.appliedRevision === revision)
     && (!node.receivedAt || now - node.receivedAt < 15000)
-    && (node.driverName || node.driverDescription))
+    && (node.driverName?.trim() || node.driverDescription?.trim()))
 }
 
 /** Definitions and nested scopes come from the backend; missing readings stay distinct from zero. */

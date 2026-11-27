@@ -10,7 +10,7 @@ export function usePluginList() {
   const scroll = ref<{ scrollTo(top: number): void }>()
   const { width, height } = useElementSize(viewport)
   const columns = computed(() => Math.max(1, Math.floor((width.value + 16) / 296)))
-  const rowHeight = 184
+  const rowHeight = 192
   const items = shallowRef<PluginDriverRecord[]>([])
   const loading = ref(false), error = ref(false), more = ref(true), active = ref(true)
   const visibility = useDocumentVisibility()
