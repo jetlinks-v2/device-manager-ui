@@ -23,6 +23,12 @@
 
 验证：在本模块使用 Node.js 22.18.0 执行 `node scripts/test-alarm-workspace.mjs`，244 项检查通过，包括两个入口的按钮定义、运行时初始化页面的真实权限过滤、四项独立授权、只读访问及授权撤销后的提交拦截。Git 差异空白检查通过。在 `runtime-ui/jetlinks-web-core/` 使用 Node.js 22.18.0 执行 `node --max_old_space_size=8192 --max-semi-space-size=64 ../node_modules/vite/bin/vite.js build --outDir /tmp/jetlinks-runtime-alarm-permissions-build -- --module-name device-manager-ui`，构建通过（13,208 个模块），输出仍有资源路径、Rollup 输出配置、循环依赖与大 chunk 警告；构建生成的本模块 `dist/baseMenu.json` 已核对，两个物联告警入口均包含 4 项按钮。未进行浏览器初始化或受限账号验收。本工作区没有独立 lint 和样式检查脚本，本次不改样式。全量类型检查未执行；待执行命令（在 `runtime-ui/`）：`pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`。
 
+## 升级任务详情按钮权限
+
+`/infrastructure/upgrade` 的任务详情由 `views/device/Firmware/Task/Detail/index.vue` 渲染。列表中的暂停、开始、重试和删除升级记录统一使用 `device/Firmware:update`，与现有批量操作、删除任务按钮一致；不依赖升级记录中未提供的 `hasEditPermission`、`hasDeletePermission` 字段。沿用当前任务状态限制与删除确认，不调整菜单定义、接口或其他前端入口。
+
+验证：四种操作的权限绑定检查、Vue 脚本／模板编译及差异空白检查通过。在 `runtime-ui/jetlinks-web-core/` 执行 `pnpm exec vite build --outDir /tmp/firmware-task-detail-permissions-build -- --module-name device-manager-ui` 通过（54.72 秒），仍有资源路径与大分块等告警。在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json` 报告 1,731 条诊断，未通过，修改组件无诊断；修复类型问题后需重跑。工作区及模块无独立 lint 脚本。尚未以真实受限角色验证页面，需通过 `pnpm dev` 在升级任务详情中核对只读账号的行按钮禁用，以及具有编辑权限账号的操作与删除确认。
+
 ## 设备树与接入列表
 
 `views/device/list/components/IotDeviceScopeSidebar.vue` 使用 core 的 `AutoTree` 自动适配侧栏高度并启用虚拟滚动，保留原有树属性、插槽和选择事件。该入口依赖 [core PR #224](https://github.com/jetlinks-v2/jetlinks-web-core/pull/224)；异步页面首次挂载的滚轮绑定还依赖运行时工作区的 `patches/ant-design-vue@4.2.6.patch`，发布时需同步交付。

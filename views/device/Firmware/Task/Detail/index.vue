@@ -170,7 +170,7 @@
           <template v-if="['waiting', 'running'].includes(record.state.value)">
             <j-permission-button
               type="link"
-              :hasPermission="record.hasEditPermission"
+              hasPermission="device/Firmware:update"
               :tooltip="{
                 title: $t('Task.index.219743-11')
               }"
@@ -184,7 +184,7 @@
           <template v-if="record.state.value === 'canceled'">
             <j-permission-button
               type="link"
-              :hasPermission="record.hasEditPermission"
+              hasPermission="device/Firmware:update"
               :tooltip="{
                 title: $t('Task.index.219743-12')
               }"
@@ -201,7 +201,7 @@
               :tooltip="{
                 title: $t('Task.index.219743-13')
               }"
-              :hasPermission="record.hasEditPermission"
+              hasPermission="device/Firmware:update"
               @click="startUpgrades(record.id)"
             >
               <template #icon>
@@ -213,7 +213,7 @@
             type="link"
             danger
             :disabled="['waiting', 'processing'].includes(record.state.value)"
-            :hasPermission="record.hasDeletePermission"
+            hasPermission="device/Firmware:update"
             :tooltip="{
               title: $t('Task.index.219743-14')
             }"
