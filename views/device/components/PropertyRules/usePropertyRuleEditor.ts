@@ -88,8 +88,10 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   // One active editor owns the feedback; a new edit must never keep an old success/error badge.
   watch(draftJson, () => { if (!saving.value) clearFeedback() }, { flush: 'sync' })
   const source = computed(() => props.scope.deviceId && hasOverride.value
-    ? raw.value && isEmptyRule(raw.value) ? 'disabled' : 'device' : raw.value ? 'product' : 'none')
-  const displaySource = computed(() => props.scope.deviceId && custom.value && pendingSave.value && !hasOverride.value ? 'device' : source.value)
+    ? raw.value && (raw.value.enabled === false || isEmptyRule(raw.value)) ? 'disabled' : 'device' : raw.value?.enabled === false ? 'disabled' : raw.value ? 'product' : 'none')
+  // Preview the pending switch without changing the saved snapshot used by statistics.
+  const displaySource = computed(() => custom.value && pendingSave.value
+    ? draft.value?.enabled === false ? 'disabled' : props.scope.deviceId ? 'device' : 'product' : source.value)
   const steps = computed(() => draft.value ? summarizeDraft(draft.value, props.property, t)
     .filter(step => step.key !== 'alarm' || (scalar.value && (alarmAvailable.value || draft.value!.alarmEnabled)))
     .map(step => step.key === 'cleaning' && !scalar.value ? { ...step, text: t('PropertyRules.unsupportedCleaning') } : step) : [])
@@ -138,6 +140,7 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
       const rule = parsed.value
       const alarm = raw.value && toDeviceAlarmRow(raw.value, props.scope.deviceId ? 'device' : 'product', props.scope.name ?? '', props.property)
       draft.value = {
+        enabled: raw.value?.enabled !== false,
         recordInvalid: raw.value?.configuration?.recordInvalid === true,
         valuesEnabled: Boolean(rule.nodes.values), valuesMode: rule.nodes.values?.configuration.processors[0]?.provider === 'replace-value'
           ? 'replace' : rule.nodes.values?.configuration.matcher.configuration.not ? 'keep' : 'ignore',
@@ -204,6 +207,9 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
     if (section === 'alarm') draft.value.alarmEnabled = enabled
     else draft.value.samplingEnabled = enabled
     if (enabled) activeSection.value = section
+  }
+  function setEnabled(value: boolean) {
+    if (draft.value && editable.value) draft.value.enabled = value
   }
   function clear() {
     if (!draft.value || !editable.value) return
@@ -305,5 +311,5 @@ export function usePropertyRuleEditor(props: RuleEditorProps, close: () => void,
   return { loading, failed, saving, blocked, draft, parsed, numeric, alarmAvailable, canSave, editable, source, displaySource, hasOverride,
     custom, dirty, pendingSave, saveState, resources, type, boolean, scalar, unit, cleaningUnit, differenceUnit, cleaningDifferenceUnit, cleaningHint, levelOptions,
     steps, activeSection, notificationOpen, setNotificationsOpen, alarmNameEditing, alarmNameValue, setAlarmNameInput, editAlarmName, stopAlarmName, toggleStep, addableParts, addPart,
-    load, requestClose, prepareLeave, discard, customize, clear, save, restore }
+    load, requestClose, prepareLeave, discard, customize, setEnabled, clear, save, restore }
 }
