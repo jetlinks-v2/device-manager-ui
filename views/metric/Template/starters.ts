@@ -1,4 +1,6 @@
 import type { MetricTemplateStarter } from '@rule-engine-manager-ui/metric'
+import type { I18nMessages } from '@jetlinks-web-core/components/I18n/types'
+import { starterJapanese, starterJapaneseGroups } from './starterJapanese'
 import { counterCycleUsage } from './counterCycleUsage'
 import { healthObservationStarters } from './healthObservation'
 import { operationFailureStarter } from './operationFailures'
@@ -4008,7 +4010,15 @@ const declarations: MetricTemplateStarter[] = [
   }
 ]
 
-export const iotMetricStarters: MetricTemplateStarter[] = [...declarations, counterCycleUsage, ...healthObservationStarters, ...monitoringStarters, operationFailureStarter, ...processStarters, ...signalQualityStarters, ...industrialMonitoringStarters].map(item => ({
-  ...item,
-  providerId: 'device-iot',
-}))
+export const iotMetricStarters: MetricTemplateStarter[] = [...declarations, counterCycleUsage, ...healthObservationStarters, ...monitoringStarters, operationFailureStarter, ...processStarters, ...signalQualityStarters, ...industrialMonitoringStarters].map(item => {
+  const messages = (item.template.options?.i18nMessages || {}) as I18nMessages
+  return {
+    ...item,
+    providerId: 'device-iot',
+    providerNameI18n: {...item.providerNameI18n,ja:'汎用 IoT テンプレート'},
+    groupNameI18n: {...item.groupNameI18n,ja:starterJapaneseGroups[item.groupId || '']},
+    template: {...item.template,options:{...item.template.options,i18nMessages:Object.fromEntries(
+      Object.entries(messages).map(([key,text])=>[key,{...text,ja:starterJapanese[item.id]?.[key]}]),
+    )}},
+  }
+})
