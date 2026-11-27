@@ -19,6 +19,9 @@ export function pluginRuntimeState(row: Partial<Pick<PluginRuntimeInfo, 'status'
   return row.status === 'unknown' || row.receivedAt != null && now - row.receivedAt >= 15000
     ? 'unknown' : row.state || row.status || 'unknown'
 }
+export function isPreviousPluginRevision(row: Pick<PluginRuntimeInfo, 'desiredRevision' | 'appliedRevision'>) {
+  return !!row.desiredRevision && !!row.appliedRevision && row.desiredRevision !== row.appliedRevision
+}
 export function pluginAvailability(nodes: PluginRuntimeInfo[], revision?: string, now = Date.now()) {
   const fresh = nodes.filter(node => !node.receivedAt || now - node.receivedAt < 15000)
   const ready = fresh.filter(node => node.available && node.status === 'ready' && (!revision || node.appliedRevision === revision))
@@ -33,6 +36,14 @@ export function pluginAvailability(nodes: PluginRuntimeInfo[], revision?: string
 }
 
 export interface PluginMetricRow { key: string; name: string; value: string; description?: string; unit?: string }
+/** Display package metadata from one fresh host of the desired revision, never mix hosts or revisions. */
+export function pluginDriverMetadata(nodes: PluginRuntimeInfo[], revision?: string, now = Date.now()) {
+  return nodes.find(node => node.status === 'ready' && node.available
+    && (!revision || node.appliedRevision === revision)
+    && (!node.receivedAt || now - node.receivedAt < 15000)
+    && (node.driverName || node.driverDescription))
+}
+
 /** Definitions and nested scopes come from the backend; missing readings stay distinct from zero. */
 export function pluginMetricRows(snapshot?: PluginMetricSnapshot, prefix = ''): PluginMetricRow[] {
   if (!snapshot) return []

@@ -28,8 +28,8 @@
         <a-skeleton v-if="runtime.pending && !runtime.instances.length" active :title="false" :paragraph="{ rows: 1 }" />
         <p v-else-if="!runtime.instances.length && !runtime.instanceError" class="plugin-inspection__muted">{{ t('pluginRuntime.noInstances') }}</p>
         <div v-for="instance in runtime.instances.slice(0, 5)" :key="`${instance.serverId}:${instance.instanceKey}`" class="plugin-inspection__row">
-          <div class="plugin-inspection__identity"><span :title="instance.ownerId || instance.pluginId">{{ instance.pluginId || instance.ownerId || instance.instanceKey }}</span><span :class="{ 'plugin-inspection__problem': !!instance.error }">{{ stateText(instance) }}</span></div>
-          <p class="plugin-inspection__muted">{{ instance.serverId }}</p>
+          <div class="plugin-inspection__identity"><span :title="instance.instanceKey">{{ instance.pluginId || instance.ownerId || instance.instanceKey }}</span><span class="plugin-inspection__state" :class="{ 'plugin-inspection__problem': !!instance.error }">{{ stateText(instance) }}<small v-if="isPreviousPluginRevision(instance)" class="plugin-inspection__previous">{{ t('pluginRuntime.previousInstance') }}</small></span></div>
+          <p class="plugin-inspection__muted">{{ instance.serverId }}<template v-if="instance.ownerId && instance.ownerId !== instance.pluginId"> · {{ instance.ownerId }}</template></p>
           <p v-if="instance.error" class="plugin-inspection__problem">{{ instance.error }}</p>
         </div>
         <p v-if="runtime.instances.length > 5 || runtime.limitReached" class="plugin-inspection__muted plugin-inspection__note">{{ t('pluginRuntime.instancePreview', { count: Math.min(5, runtime.instances.length) }) }}<template v-if="runtime.limitReached"> · {{ t('pluginRuntime.instanceLimit') }}</template></p>
@@ -44,7 +44,7 @@ import { useTimestamp } from '@vueuse/core'
 import { theme } from 'ant-design-vue'
 import { usePluginPermission } from '../../../hooks/usePermission'
 import type { PluginRuntimeInfo } from '../../../api/link/pluginRuntime'
-import { pluginRuntimeState, type PluginRuntimeInspection } from './runtimeState'
+import { pluginRuntimeState, isPreviousPluginRevision, type PluginRuntimeInspection } from './runtimeState'
 
 const props = defineProps<{ name: string; runtime: PluginRuntimeInspection; canViewLogs: boolean }>()
 const emit = defineEmits<{ refresh: []; retry: [node: PluginRuntimeInfo]; logs: [serverId: string]; close: [] }>()
@@ -75,6 +75,8 @@ function stateText(row: PluginRuntimeInfo) {
 .plugin-inspection__identity { display:flex; justify-content:space-between; align-items:baseline; gap:var(--space-3); }
 .plugin-inspection__identity > :first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .plugin-inspection__identity > :last-child { flex:none; }
+.plugin-inspection__state { display:flex; align-items:center; gap:var(--space-2); }
+.plugin-inspection__previous { color:v-bind('token.colorWarning'); font-size:inherit; font-weight:400; }
 .plugin-inspection__muted { color:var(--ink-3); }
 .plugin-inspection__problem { color:v-bind('token.colorError'); }
 .plugin-inspection__instances { margin-top:var(--space-3); padding-top:var(--space-3); border-top:var(--jet-theme-stroke-width) solid var(--line); }

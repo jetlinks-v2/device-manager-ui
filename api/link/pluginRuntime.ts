@@ -21,6 +21,8 @@ export interface PluginRuntimeInfo {
   serverId: string
   serviceId: string
   typeName?: string
+  driverName?: string
+  driverDescription?: string
   desiredRevision?: string
   appliedRevision?: string
   version?: string

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { pluginAvailability, pluginMetricRows, pluginRuntimeState, pluginRuntimeError } from '../views/link/plugin/runtimeState.ts'
+import { pluginAvailability, pluginMetricRows, pluginRuntimeState, pluginRuntimeError, pluginDriverMetadata, isPreviousPluginRevision } from '../views/link/plugin/runtimeState.ts'
 import type { PluginRuntimeInfo } from '../api/link/pluginRuntime.ts'
 import { pluginListRequest } from '../api/link/pluginListQuery.ts'
 
@@ -58,4 +58,28 @@ test('custom metric metadata and scopes are preserved, with zero distinct from u
   })
   assert.deepEqual(rows.map(row => [row.key, row.value]), [['count', '0'], ['unavailable', '—'], ['transport.bytes', '42']])
   assert.equal(rows[0].name, 'Count')
+})
+
+test('package metadata comes from a fresh loaded host of the current revision', () => {
+  const old = { ...node('ready', true, 'old'), driverName: 'Old package', driverDescription: 'Old description' }
+  const current = { ...node('ready', true), driverName: 'Declared package', driverDescription: 'Declared description' }
+  assert.equal(pluginDriverMetadata([old, current], 'current'), current)
+  assert.equal(pluginDriverMetadata([{ ...current, receivedAt: 1 }], 'current', 20000), undefined)
+  assert.equal(pluginDriverMetadata([{ ...current, status: 'unknown' }], 'current'), undefined)
+  assert.equal(pluginDriverMetadata([{ ...current, available: false }], 'current'), undefined)
+})
+
+test('package name and description stay on one host and missing package fields remain missing', () => {
+  const named = { ...node('ready', true), serverId: 'one', driverName: 'Package name' }
+  const described = { ...node('ready', true), serverId: 'two', driverDescription: 'Another host description' }
+  const metadata = pluginDriverMetadata([named, described], 'current')
+  assert.equal(metadata.driverName, 'Package name')
+  assert.equal(metadata.driverDescription, undefined)
+  assert.equal(pluginDriverMetadata([node('ready', true)], 'current'), undefined)
+})
+
+test('same-name instances from another revision remain visible with an explicit old-revision identity', () => {
+  assert.equal(isPreviousPluginRevision({ desiredRevision: 'new', appliedRevision: 'old' }), true)
+  assert.equal(isPreviousPluginRevision({ desiredRevision: 'new', appliedRevision: 'new' }), false)
+  assert.equal(isPreviousPluginRevision({ desiredRevision: 'new' }), false)
 })

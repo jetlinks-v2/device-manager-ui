@@ -6,14 +6,14 @@
       <span class="plugin-list__count">{{ t('pluginRuntime.loaded', { count: list.items.value.length }) }}</span>
       <a-space :size="8" class="plugin-list__actions">
         <a-button type="text" size="small" :aria-label="t('pluginRuntime.refresh')" :title="t('pluginRuntime.refresh')" @click="list.refresh()"><AIcon type="ReloadOutlined" /></a-button>
-        <j-permission-button type="primary" :hasPermission="`${permissionKey}:add`" @click="add"><template #icon><AIcon type="PlusOutlined" /></template>{{ t('plugin.index.293829-0') }}</j-permission-button>
+        <j-permission-button type="primary" :hasPermission="`${permissionKey}:add`" @click="add"><template #icon><AIcon type="PlusOutlined" /></template>{{ t('pluginRuntime.addDriver') }}</j-permission-button>
       </a-space>
     </header>
     <div ref="viewport" class="plugin-list__body">
       <VirtualScroll v-if="list.items.value.length" ref="scroll" class="plugin-list__scroll" tabindex="0" role="region" :aria-label="t('AccessComponent.listTitle.plugin')" :data="list.rows.value" :item-height="list.rowHeight" :style="{ height: '0px' }" @reach-bottom="list.loadMore">
         <template #renderItem="{ plugins }">
           <div class="plugin-list__row" :style="{ gridTemplateColumns: `repeat(${list.columns.value}, minmax(0, 1fr))` }">
-            <PluginCard v-for="plugin in plugins" :key="plugin.id" :data="plugin" :status="statusFor(plugin.id)" :loading="runtime.loading.value.has(plugin.id) || !visibleIds.has(plugin.id)" :permission="permissionKey"
+            <PluginCard v-for="plugin in plugins" :key="plugin.id" :data="plugin" :status="statusFor(plugin.id)" :metadata="runtime.descriptions.value[plugin.id]" :loading="runtime.loading.value.has(plugin.id) || !visibleIds.has(plugin.id)" :permission="permissionKey"
               :type-label="runtime.rows.value.find(node => node.driverId === plugin.id && node.typeName)?.typeName"
               :actions="actions(plugin)" :inspection-open="inspectionId === plugin.id" :inspection="inspectionId === plugin.id ? inspectionView : undefined" :can-view-logs="diagnostics.logs"
               @inspect="inspect(plugin.id, $event)" @visibility="setVisible(plugin.id, $event)" @refresh="refreshInspection" @retry="retryNode" @logs="openLogs" />

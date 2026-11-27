@@ -3,7 +3,7 @@ import { useDocumentVisibility, useTimestamp } from '@vueuse/core'
 import { timer, switchMap } from 'rxjs'
 import { getRequestHeaders } from '@jetlinks-web-core/utils/request-context'
 import { observePluginRuntime, retryPluginRuntime, type PluginDriverRecord, type PluginRuntimeInfo, type PluginRuntimeTargets } from '../../../api/link/pluginRuntime'
-import { pluginAvailability, pluginRuntimeError } from './runtimeState'
+import { pluginAvailability, pluginRuntimeError, pluginDriverMetadata } from './runtimeState'
 import { useDiagnosticScope } from '../diagnostics/useDiagnosticScope'
 import { useI18n } from 'vue-i18n'
 
@@ -86,6 +86,8 @@ export function usePluginRuntime(drivers: () => PluginDriverRecord[], instances 
   }
   const status = computed(() => Object.fromEntries(drivers().map(driver => [driver.id,
     pluginAvailability(rows.value.filter(row => row.driverId === driver.id), driver.runtimeRevision, now.value)])))
+  const descriptions = computed(() => Object.fromEntries(drivers().map(driver => [driver.id,
+    pluginDriverMetadata(rows.value.filter(row => row.driverId === driver.id), driver.runtimeRevision, now.value)])))
   async function retry(id: string, node: PluginRuntimeInfo) {
     busy.value = node.serverId
     try { await retryPluginRuntime(id, node); refresh() }
@@ -96,5 +98,5 @@ export function usePluginRuntime(drivers: () => PluginDriverRecord[], instances 
   onActivated(() => { active.value = true })
   onDeactivated(() => { active.value = false })
   onScopeDispose(stop)
-  return { rows, error, status, refresh, retry, busy, pending, loading, limitReached: computed(() => coverage.value.some(node => node.limitReached)) }
+  return { rows, error, status, descriptions, refresh, retry, busy, pending, loading, limitReached: computed(() => coverage.value.some(node => node.limitReached)) }
 }

@@ -3,7 +3,15 @@
   <CardSummary class="plugin-card__surface" :data="summary" :background-opacity="100" :interactive="false">
     <template #title><span class="plugin-card__title" :title="`${summary.title}\nID: ${data.id}`"><span class="plugin-card__type-icon" aria-hidden="true"><AIcon :type="getPluginTypeIcon(data.type)" /></span><span class="plugin-card__name">{{ summary.title }}</span></span></template>
     <template #subtitle><span class="plugin-card__subtitle" :title="summary.subtitle">{{ summary.subtitle }}</span></template>
-    <template v-if="summary.description" #description><span class="plugin-card__description">{{ summary.description }}</span></template>
+    <template v-if="loading || metadata?.driverName || metadata?.driverDescription" #meta>
+      <div class="plugin-card__runtime">
+        <a-skeleton-input v-if="loading" class="plugin-card__summary-loading" active size="small" />
+        <template v-else-if="metadata?.driverName || metadata?.driverDescription">
+          <span v-if="metadata.driverName" class="plugin-card__driver-name" :title="metadata.driverName">{{ metadata.driverName }}</span>
+          <span v-if="metadata.driverDescription" class="plugin-card__description" :title="metadata.driverDescription">{{ metadata.driverDescription }}</span>
+        </template>
+      </div>
+    </template>
     <template #status>
       <a-dropdown v-model:open="menuOpen" :trigger="['click']" placement="bottomRight" @open-change="open => open && emit('inspect', false)">
         <a-button type="text" size="small" :aria-label="t('pluginRuntime.actions')" @click.stop><AIcon type="EllipsisOutlined" /></a-button>
@@ -46,6 +54,7 @@ const props = defineProps<{
   actions: PluginCardAction[]
   permission: string
   status: ReturnType<typeof pluginAvailability>
+  metadata?: Pick<PluginRuntimeInfo, 'driverName' | 'driverDescription'>
   loading?: boolean
   typeLabel?: string
   inspectionOpen: boolean
@@ -64,18 +73,22 @@ useIntersectionObserver(element, ([entry]) => emit('visibility', !!entry?.isInte
 onScopeDispose(() => emit('visibility', false))
 const summary = computed<CardSummaryData>(() => ({
   title: getI18nText(props.data, 'name') || props.data.id,
-  subtitle: [props.typeLabel || (props.data.type ? getPluginTypeLabel(props.data.type) : undefined), props.data.version].filter(Boolean).join(' · '),
-  description: getI18nText(props.data, 'description') || undefined,
+  subtitle: [props.typeLabel || props.data.type
+    ? t('pluginRuntime.driverType', { type: props.typeLabel || getPluginTypeLabel(props.data.type) })
+    : t('pluginRuntime.definition'), props.data.version].filter(Boolean).join(' · '),
 }))
 </script>
 <style scoped>
-.plugin-card { height:calc(var(--plugin-card-row-height,176px) - 16px); min-width:0; }
+.plugin-card { height:calc(var(--plugin-card-row-height,184px) - 16px); min-width:0; }
 .plugin-card__surface { --panel-radius:var(--r-2,6px); --fs-h3:var(--fs-14,14px); --card-summary-footer-padding:8px 16px; border-color:var(--line); box-shadow:none; }
 .plugin-card__surface:hover { border-color:var(--accent); background:var(--accent-soft); box-shadow:none; }
 .plugin-card__title { display:flex; align-items:center; gap:var(--space-2); min-width:0; font-size:var(--fs-14,14px); font-weight:500; line-height:24px; }
 .plugin-card__type-icon { flex:none; color:var(--accent); font-size:14px; }
 .plugin-card__name { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.plugin-card__description { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; color:var(--ink-3); font-size:var(--fs-12,12px); line-height:1.6; overflow-wrap:anywhere; }
+.plugin-card__runtime { display:flex; flex-direction:column; gap:var(--space-1); width:100%; min-width:0; font-size:var(--fs-12,12px); line-height:18px; }
+.plugin-card__driver-name { min-width:0; overflow:hidden; color:var(--ink-2); white-space:nowrap; text-overflow:ellipsis; }
+.plugin-card__description { display:-webkit-box; min-width:0; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; color:var(--ink-3); overflow-wrap:anywhere; }
+.plugin-card__summary-loading { height:18px; line-height:18px; overflow:hidden; }
 .plugin-card__subtitle { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--ink-3); font-size:12px; }
 .plugin-card__status-trigger { display:flex; align-items:center; min-width:0; width:calc(100% + var(--space-4) * 2); margin:calc(var(--space-2) * -1) calc(var(--space-4) * -1); padding:var(--space-2) var(--space-4); border:0; background:transparent; color:inherit; font:inherit; text-align:left; line-height:18px; cursor:pointer; }
 .plugin-card__status-trigger:hover { background:var(--bg); }
