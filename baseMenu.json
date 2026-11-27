@@ -553,8 +553,7 @@
                 {
                   "permission": "ai_scene",
                   "actions": [
-                    "query",
-                    "delete"
+                    "query"
                   ]
                 },
                 {
@@ -628,8 +627,7 @@
                   "permission": "device-group",
                   "actions": [
                     "query",
-                    "save",
-                    "delete"
+                    "save"
                   ]
                 },
                 {
@@ -667,8 +665,7 @@
                 {
                   "permission": "edge-action-sync",
                   "actions": [
-                    "save",
-                    "delete"
+                    "save"
                   ]
                 },
                 {
@@ -1023,6 +1020,12 @@
                               "permission": "space-management",
                               "actions": [
                                   "query"
+                              ]
+                          },
+                          {
+                              "permission": "edge-action-sync",
+                              "actions": [
+                                  "delete"
                               ]
                           }
                       ]
