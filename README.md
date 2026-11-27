@@ -31,3 +31,7 @@
 验证：使用实际页面脚本与 Vue 响应式运行时控制响应顺序，资源先返回、详情先返回、类型切换与资源刷新、空资源、独立配置和新增页类型回填共 6 项检查通过，并在 `origin/2.20` 基线复现资源先返回时端口选项为空。三个修改组件的 Vue 脚本、TypeScript 语法、模板编译及差异空白检查通过。既有浏览器人工验证记录覆盖 `view=false` 与 `view=true` 两个入口的真实端口选项和已有端口回显。根项目与本模块未配置独立 lint 脚本。
 
 全量验证：在 `runtime-ui/jetlinks-web-core/` 执行 `pnpm exec vite build --outDir /tmp/jetlinks-network-port-build -- --module-name device-manager-ui`，模块构建通过（11,620 个模块，56.50 秒），仍有资源路径、CSS 注释与大 chunk 警告。在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，当前与 `origin/2.20` 基线均有 1,825 条诊断；映射改动行号后，诊断位置、错误码和末级原因无新增或减少。描述列新增 `ellipsis` 使一条既有 TS2322 的类型展开文本变化，末级原因仍为操作列 `dataIndex` 可为 `undefined`。全量类型检查仍未通过。
+
+## 插件安装与运行观测
+
+`views/link/plugin/` 使用公共卡片和 `VirtualScroll`，按 `createTime / id` 游标分段读取插件配置。只对可见插件共享采样；底栏在首份采样返回前按插件展示骨架屏，后台刷新保留已有状态，读取失败结束加载并显示未知。状态图标 hover / focus 展示生效节点、运行实例预览及当前问题，浮层打开时按需读取实例、关闭即取消，不使用详情抽屉。驱动是否可用按当前修订的真实宿主生效结果判断，不适用节点不计为故障；节点重试和已有日志入口仍由实际 owner 控制权限。完整接口、宿主与部署边界见 workspace 的 `modules/jetlinks-components/plugin-component/docs/plugin-runtime-management.md`。

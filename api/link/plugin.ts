@@ -1,10 +1,16 @@
 import { request } from '@jetlinks-web/core'
 import {getBaseApi} from "@jetlinks-web-core/utils";
 import { createUploadCustomRequest } from '@jetlinks-web-core/components/Upload/utils';
+import { postRuntimeNdJson } from '@jetlinks-web-core/utils/ndjson-precision'
+import type { PluginDriverRecord } from './pluginRuntime'
+import { pluginListRequest, type PluginListQuery, type PluginListCursor } from './pluginListQuery'
 
 const pluginUploadPath = '/plugin/driver/upload';
 
 export const queryPage = (data: any) => request.post(`/plugin/driver/_query`, data)
+
+export const streamPlugins = (query: PluginListQuery, cursor?: PluginListCursor) =>
+  postRuntimeNdJson<PluginDriverRecord>('/plugin/driver/_query/no-paging', pluginListRequest(query, cursor))
 
 export const uploadFile = () => `${getBaseApi()}${pluginUploadPath}`
 
