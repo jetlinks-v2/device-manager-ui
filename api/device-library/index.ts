@@ -24,6 +24,8 @@ import type {
   MaybeEnum,
 } from './types'
 
+export const DEVICE_LIBRARY_TEMPLATE_PAGE_SIZE = 6
+
 const t = (key: string) => i18n.global.t(key)
 
 type MarketplaceResource = Record<string, any>
@@ -1080,7 +1082,7 @@ export const queryDeviceLibraryTemplates_api = async (
   input: DeviceLibraryTemplateQueryInput = {},
 ): Promise<DeviceLibraryTemplatePageResult> => {
   const pageIndex = Number(input.pageIndex ?? 0)
-  const pageSize = Number(input.pageSize ?? 4)
+  const pageSize = Number(input.pageSize ?? DEVICE_LIBRARY_TEMPLATE_PAGE_SIZE)
   if (!(await probeDeviceLibraryCapability_api())) {
     return { data: [], total: 0, pageIndex, pageSize }
   }

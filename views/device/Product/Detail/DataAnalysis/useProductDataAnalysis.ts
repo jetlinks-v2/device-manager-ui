@@ -1,4 +1,4 @@
-import { computed, ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted, watch } from 'vue'
 import { useFullscreen } from '@vueuse/core';
 import { useProductStore } from '../../../../../store/product';
 import {
@@ -10,10 +10,10 @@ import { isBoolean } from 'lodash-es';
 import { onlyMessage } from '@jetlinks-web-core/utils/comm';
 import { useAuthStore } from '@jetlinks-web-core/store';
 import { useI18n } from 'vue-i18n';
-import { useProductCodec } from './useProductCodec';
+import { useProductCodec, type ProductCodecSupport } from './useProductCodec';
 
 /** 产品解析配置的读取、保存与独立调试。 */
-export function useProductDataAnalysis() {
+export function useProductDataAnalysis(support?: ProductCodecSupport) {
   const { t: $t } = useI18n();
   const permissionStore = useAuthStore();
   const canUpdate = computed(() => permissionStore.hasPermission('device/Product:update'));
@@ -36,11 +36,19 @@ export function useProductDataAnalysis() {
 
   const url = ref<string>('');
   const topic = ref<string>('');
-  const topicList = ref([]);
+  const topicList = ref<Array<{ value: string }>>([]);
   const simulation = ref<string>('');
   const resultValue = ref<any>({});
-  const loading = ref<boolean>(false);
-  const { editorValue, codecLoading, codecFailed, getProductCode, buildProductCode } = useProductCodec(() => productStore.current.id, defaultValue);
+  const loading = ref(false);
+  const saving = ref(false);
+  const { editorValue, codecLoading, codecFailed, codecProvider, configuredProvider, codecProviders, isScript, canUseCodec, getProductCode, buildProductCode, selectProvider } = useProductCodec(() => productStore.current.id, defaultValue, support);
+  const canWriteCodec = computed(() => canUpdate.value && canUseCodec.value);
+  const editorLanguage = computed(() => isScript.value ? 'javascript' : 'json');
+  const providerLabel = (provider: string) => {
+    if (provider === 'jsr223') return $t('IotDeviceDetail.parsing.javascriptLabel');
+    return codecProviders.value.find(({ id }) => id === provider)?.name || provider;
+  };
+  const typeDescription = computed(() => isScript.value ? $t('IotDeviceDetail.parsing.javascriptDesc') : '');
   const typescriptTip = reactive({
     typescript: ''
   })
@@ -56,7 +64,7 @@ export function useProductDataAnalysis() {
             },
   );
 
-  const isDisabled = computed(() => codecLoading.value || codecFailed.value || !simulation.value || !editorValue.value);
+  const isDisabled = computed(() => !canUseCodec.value || loading.value || saving.value || !simulation.value || !editorValue.value.trim());
 
   const result = computed(() =>
       resultValue.value.success
@@ -65,7 +73,8 @@ export function useProductDataAnalysis() {
   );
 
   const editorInit = (editor: any, monaco: any) => {
-    editor.updateOptions({ readOnly: !canUpdate.value });
+    editor.updateOptions({ readOnly: !canWriteCodec.value });
+    if (!isScript.value) return;
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
       noSyntaxValidation: false,
@@ -89,60 +98,61 @@ export function useProductDataAnalysis() {
     });
   }
 
-  //获取topic
-  const getTopic = async () => {
-      const res: any = await getProtocal(
-          productStore.current.messageProtocol,
-          productStore.current.transportProtocol,
-      );
-      if (res.status === 200) {
-          const item = res.result.routes?.map((items: any) => ({
-              value: items.topic,
-          }));
-          topicList.value = item;
+  const getTopic = async (id: string) => {
+    try {
+      const res = await getProtocal(productStore.current.messageProtocol, productStore.current.transportProtocol);
+      if (productStore.current.id === id && res.status === 200) {
+        topicList.value = res.result?.routes?.map(({ topic }: { topic: string }) => ({ value: topic })) ?? [];
       }
+    } catch {
+      // 获取不到协议路由时，仍可手动输入 Topic。
+    }
   };
 
-  const queryCodeTips = () => {
-    queryProductCodeTips(productStore.current.id).then(res => {
-      if (res.success) {
-        typescriptTip.typescript = res.result
-      }
-    })
-  }
-
-
-  //调试
-  const test = async (dataTest: any) => {
+  const test = async (dataTest: Record<string, unknown>) => {
+      const id = productStore.current.id;
       loading.value = true;
-      const res = await testCode(dataTest);
-      if (res.status === 200) {
-          loading.value = false;
-          resultValue.value = res?.result;
-      } else {
+      try {
+          const res = await testCode(dataTest);
+          if (res.status !== 200) throw new Error('Decode request failed');
+          if (productStore.current.id === id) resultValue.value = res.result;
+      } catch {
+          if (productStore.current.id === id) {
+            resultValue.value = { success: false, reason: $t('deviceDetailOptimization.debugRequestFailed') };
+          }
+      } finally {
           loading.value = false;
       }
   };
 
   //保存产品解析规则
   const save = async () => {
-      if (!canUpdate.value || !editorValue.value.trim()) return;
+      if (!canWriteCodec.value || saving.value || loading.value || !editorValue.value.trim()) return;
       const item = readCodecInput();
       if (!item) return;
-      const res = await saveProductCode(productStore.current.id, item);
-      if (res.status === 200) {
+      const id = productStore.current.id;
+      saving.value = true;
+      try {
+        const res = await saveProductCode(id, item);
+        if (res.status === 200 && productStore.current.id === id) {
           onlyMessage($t('DataAnalysis.index.571961-9'));
-          getProductCode();
+          await getProductCode();
+        }
+      } finally {
+        saving.value = false;
       }
   };
 
-  /** 调试与保存统一提交 JavaScript 配置。 */
+  /** 调试与保存均提交已选且受支持的解析器，JSON 无效时不发送请求。 */
   const readCodecInput = () => {
-      if (codecLoading.value || codecFailed.value) return undefined;
-      return buildProductCode();
+      try {
+          return buildProductCode();
+      } catch {
+          onlyMessage($t('InstanceDeviceAccess.codecDebug.jsonInvalid'), 'error');
+      }
   };
   const debug = () => {
-      if (!canUpdate.value) return;
+      if (!canWriteCodec.value || isDisabled.value) return;
       const isMqtt = productStore.current.transportProtocol === 'MQTT';
       const address = isMqtt ? topic.value : url.value;
       if (!address) {
@@ -155,12 +165,27 @@ export function useProductDataAnalysis() {
   };
 
   onMounted(() => {
-    if(productStore.current.id){
-      getProductCode();
-      getTopic();
-      queryCodeTips()
-    }
+    watch(() => productStore.current.id, (id) => {
+      void getProductCode();
+      topicList.value = [];
+      resultValue.value = {};
+      if (id) void getTopic(id);
+    }, { immediate: true });
+    watch([() => productStore.current.id, isScript, canUseCodec], async ([id, script, supported], _, onCleanup) => {
+      typescriptTip.typescript = '';
+      if (!id || !script || !supported) return;
+      let active = true;
+      onCleanup(() => { active = false; });
+      try {
+        const res = await queryProductCodeTips(id);
+        if (active && res.success) typescriptTip.typescript = res.result;
+      } catch {
+        // 类型提示不影响解析配置的读取与编辑。
+      }
+    }, { immediate: true });
   });
 
-  return { canUpdate, productStore, editorValue, codecLoading, codecFailed, getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, isDisabled, debug, save }
+  return { canUpdate, canWriteCodec, canUseCodec, productStore, editorValue, editorLanguage,
+    codecLoading, codecFailed, codecProvider, configuredProvider, codecProviders, isScript, providerLabel, typeDescription, selectProvider,
+    getProductCode, toggle, el, typescriptTip, editorInit, topicList, topic, url, simulation, result, resStyle, loading, saving, isDisabled, debug, save }
 }

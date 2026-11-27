@@ -30,12 +30,17 @@ const legacyTabMap: Record<string, ProductDetailTabKey> = {
   Dashboard: 'Dashboard',
 }
 
+export function supportsProductCodec(product: Partial<ProductItem>) {
+  return product.features?.some(({ id }) => id === 'transparentCodec') ?? false
+}
+
 /** Builds direct product-detail entries while preserving existing feature switches. */
 export function buildProductDetailTabs(product: Partial<ProductItem>, options: {
   showAlarm: boolean
   showRules?: boolean
   showFirmware: boolean
   showDashboard: boolean
+  hasProductCodecProvider: boolean
   isNoCommunity: boolean
 }): ProductDetailTab[] {
   const tabs: ProductDetailTab[] = [
@@ -43,18 +48,18 @@ export function buildProductDetailTabs(product: Partial<ProductItem>, options: {
     { key: 'Metadata', labelKey: 'Detail.index.478940-10', icon: 'ApartmentOutlined' },
   ]
   if (options.showRules !== false) tabs.push({ key: 'AlarmConfig', labelKey: 'PropertyRules.title', icon: 'ControlOutlined' })
-  const features = (product as any)?.features || []
+  const features = product.features ?? []
   if (options.showAlarm) {
     tabs.push({ key: 'AlarmRecord', labelKey: 'Product.detail.alarmRecords', icon: 'AlertOutlined' })
     if (options.isNoCommunity) tabs.push({ key: 'Invalid', labelKey: 'Detail.index.478940-17', icon: 'FileTextOutlined' })
   }
-  if (features.some((item: any) => item.id === 'transparentCodec')) {
+  if (options.hasProductCodecProvider && supportsProductCodec(product)) {
     tabs.push({ key: 'DataAnalysis', labelKey: 'Detail.index.478940-13', icon: 'LineChartOutlined' })
   }
-  if (features.some((item: any) => item.id === 'supportFirmware') && options.showFirmware && options.isNoCommunity) {
+  if (features.some((item) => item.id === 'supportFirmware') && options.showFirmware && options.isNoCommunity) {
     tabs.push({ key: 'Firmware', labelKey: 'Detail.index.478940-14', icon: 'CloudUploadOutlined' })
   }
-  if (features.some((item: any) => item.id === 'diffMetadataSameProduct')) {
+  if (features.some((item) => item.id === 'diffMetadataSameProduct')) {
     tabs.push({ key: 'MetadataMap', labelKey: 'Detail.index.478940-15', icon: 'SwapOutlined' })
   }
   if (options.showDashboard) tabs.push({ key: 'Dashboard', labelKey: 'Detail.index.478940-20', icon: 'DashboardOutlined' })
