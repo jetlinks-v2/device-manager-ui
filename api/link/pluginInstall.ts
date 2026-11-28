@@ -76,9 +76,14 @@ export function createPluginDriverUpload(onProgress: (event: PluginInstallProgre
           next(event) {
             if (!active) return
             onProgress(event)
-            if (event.attributes?.result) result = event.attributes.result
-            if (event.status === 'FAILED' && (!lastError || event.attributes?.serverId))
-              lastError = failure(event.attributes?.errorCode || 'CHECK_FAILED', event.errorMessage || event.message)
+            if (event.name === 'plugin.check' && event.status === 'COMPLETED' && event.attributes?.result)
+              result = event.attributes.result
+            if (event.status === 'FAILED') {
+              const code = event.attributes?.errorCode
+              if (!lastError || event.attributes?.serverId || (code && code !== 'error.unable_to_load_plugin_driver'))
+                lastError = failure(code || 'CHECK_FAILED', event.errorMessage || event.message)
+              if (!event.attributes?.serverId) result = undefined
+            }
           },
           error(error: Error & { status?: number }) {
             if (active) options.onError?.(error.status === 401 || error.status === 403 ? error : lastError || error)

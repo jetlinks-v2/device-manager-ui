@@ -87,6 +87,26 @@ test('cancellation aborts file upload and the progress reader and ignores late r
   assert.equal(flow.state().success, undefined); assert.equal(flow.state().error, undefined)
 })
 
+test('only a completed driver check can provide the package description', () => {
+  const flow = setup(); flow.uploaded({ result: file })
+  flow.response.next({ name: 'plugin.download', status: 'PROGRESS', attributes: { result } })
+  flow.response.complete()
+  assert.equal(flow.state().success, undefined)
+  assert.equal(flow.state().error.code, 'CHECK_STREAM_ENDED')
+})
+
+test('a specific final failure takes precedence over an earlier node failure', () => {
+  const flow = setup(); flow.uploaded({ result: file })
+  flow.response.next({ name: 'plugin.check', status: 'FAILED', errorMessage: 'File download failed',
+    attributes: { serverId: 'a', errorCode: 'error.plugin_driver_download_failed' } })
+  flow.response.next({ name: 'plugin.check', status: 'COMPLETED', attributes: { serverId: 'b', result } })
+  flow.response.next({ name: 'plugin.check', status: 'FAILED', errorMessage: 'Permission denied',
+    attributes: { errorCode: 'error.access_denied' } })
+  flow.response.complete()
+  assert.equal(flow.state().error.message, 'Permission denied')
+  assert.equal(flow.state().success, undefined)
+})
+
 test('phase names, counters and actionable error guidance have matching zh/en/ja resources', () => {
   const presentation = load('../views/link/plugin/installProgress.ts', () => { throw new Error('Unexpected dependency') })
   let reference
