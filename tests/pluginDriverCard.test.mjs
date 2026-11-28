@@ -28,7 +28,7 @@ const data = { id: 'driver', name: 'Configured label', description: 'Editable de
 const render = props => {
   const app = createSSRApp(Card, { data, actions: [], permission: 'plugin', status: { state: 'available', ready: 1 },
     inspectionOpen: false, canViewLogs: false, ...props })
-  for (const name of ['ADropdown', 'APopover']) app.component(name, { setup: (_, { slots }) => () => h('div', slots.default?.()) })
+  for (const name of ['ADropdown', 'APopover', 'AConfigProvider']) app.component(name, { setup: (_, { slots }) => () => h('div', slots.default?.()) })
   app.component('AButton', { setup: (_, { slots }) => () => h('button', slots.default?.()) })
   app.component('AIcon', { render: () => h('i') })
   app.component('ASkeletonInput', { render: () => h('i', { 'data-loading': 'true' }) })

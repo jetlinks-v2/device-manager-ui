@@ -28,10 +28,12 @@
     </template>
     <template #footer>
       <RuntimeStatus v-if="loading" :status="status" loading />
-      <a-popover v-else :open="inspectionOpen" :trigger="['hover', 'focus', 'click']" placement="topLeft" :mouse-enter-delay="0.15" :mouse-leave-delay="0.15" :overlay-inner-style="{ border: 'var(--jet-theme-stroke-width) solid var(--line-strong)', background: 'var(--jet-theme-bg-base)', boxShadow: 'var(--shadow-pop)' }" destroy-tooltip-on-hide @open-change="inspect">
+      <a-config-provider v-else :theme="{ components: { Popover: { boxShadowSecondary: 'var(--shadow-pop)' } } }">
+      <a-popover :open="inspectionOpen" :trigger="['hover', 'focus', 'click']" placement="topLeft" :mouse-enter-delay="0.15" :mouse-leave-delay="0.15" destroy-tooltip-on-hide @open-change="inspect">
         <template #content><RuntimePopover v-if="inspection" :name="summary.title" :runtime="inspection" :can-view-logs="canViewLogs" @refresh="emit('refresh')" @retry="emit('retry', $event)" @logs="emit('logs', $event)" @close="inspect(false)" /></template>
         <button type="button" class="plugin-card__status-trigger" :aria-label="`${summary.title} · ${t(`pluginRuntime.${status.state}`)}`" :aria-expanded="inspectionOpen" @click.stop @keydown.stop @keydown.esc="inspect(false)"><RuntimeStatus :status="status" /></button>
       </a-popover>
+      </a-config-provider>
     </template>
   </CardSummary>
   </div>
