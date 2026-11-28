@@ -3,6 +3,7 @@ import { Upload, notification, type UploadChangeParam, type UploadFile, type Upl
 import { onlyMessage } from '@jetlinks-web/utils';
 import { useI18n } from 'vue-i18n';
 import type { FileUploadResult } from './typings';
+import { uploadError } from './installProgress';
 
 interface PluginUploadResponse {
     success?: boolean;
@@ -19,6 +20,7 @@ interface PluginUploadEvents {
 export function usePluginFileUpload(fileName: string | undefined, events: PluginUploadEvents) {
     const { t: $t } = useI18n();
     const uploading = ref(false);
+    const error = ref('');
     const fileList = ref<UploadFile[]>(fileName ? [{
         uid: 'plugin-package',
         name: fileName,
@@ -42,6 +44,7 @@ export function usePluginFileUpload(fileName: string | undefined, events: Plugin
 
     const handleChange = (info: UploadChangeParam<UploadFile<PluginUploadResponse>>) => {
         if (info.file.status === 'uploading') {
+            error.value = '';
             fileList.value = info.fileList.slice(-1);
             setUploading(true);
             return;
@@ -52,6 +55,7 @@ export function usePluginFileUpload(fileName: string | undefined, events: Plugin
             const result = response?.result;
             // 版本和地址必须来自插件解析接口，异常响应不能覆盖原有插件配置。
             if (response?.success === false || !result?.version || !result.accessUrl) {
+                error.value = response?.message || result?.message || $t('plugin.UploadFile.628586-5');
                 fileList.value = [...uploadedFiles];
                 notification.error({
                     message: $t('plugin.UploadFile.628586-5'),
@@ -66,6 +70,7 @@ export function usePluginFileUpload(fileName: string | undefined, events: Plugin
         } else if (info.file.status === 'error') {
             // 公共组件负责请求失败提示，这里恢复文件列表并解除提交禁用。
             fileList.value = [...uploadedFiles];
+            error.value = uploadError(info.file.error, $t);
             setUploading(false);
         }
     };
@@ -73,9 +78,10 @@ export function usePluginFileUpload(fileName: string | undefined, events: Plugin
     const handleRemove = () => {
         fileList.value = [];
         uploadedFiles = [];
+        error.value = '';
         setUploading(false);
         events.onChange();
     };
 
-    return { fileList, uploading, beforeUpload, handleChange, handleRemove };
+    return { fileList, uploading, error, beforeUpload, handleChange, handleRemove };
 }

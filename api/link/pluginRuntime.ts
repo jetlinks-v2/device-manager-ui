@@ -2,6 +2,7 @@ import { request } from '@jetlinks-web/core'
 import { postRuntimeNdJson } from '@jetlinks-web-core/utils/ndjson-precision'
 import { unwrapDiagnosticRecord } from './diagnosticStream'
 import { map } from 'rxjs'
+import type { PluginInstallProgress } from './pluginInstall'
 
 export interface PluginMetricSnapshot {
   instanceId: string
@@ -29,6 +30,7 @@ export interface PluginRuntimeInfo {
   status: string
   state?: string
   stage?: string
+  progress?: PluginInstallProgress
   error?: string
   lastError?: string
   lastFailureStage?: string

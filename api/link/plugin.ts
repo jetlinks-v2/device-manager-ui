@@ -1,6 +1,6 @@
 import { request } from '@jetlinks-web/core'
 import {getBaseApi} from "@jetlinks-web-core/utils";
-import { createUploadCustomRequest } from '@jetlinks-web-core/components/Upload/utils';
+import { createPluginDriverUpload } from './pluginInstall';
 import { postRuntimeNdJson } from '@jetlinks-web-core/utils/ndjson-precision'
 import type { PluginDriverRecord } from './pluginRuntime'
 import { pluginListRequest, type PluginListQuery, type PluginListCursor } from './pluginListQuery'
@@ -14,8 +14,8 @@ export const streamPlugins = (query: PluginListQuery, cursor?: PluginListCursor)
 
 export const uploadFile = () => `${getBaseApi()}${pluginUploadPath}`
 
-// 使用统一请求上下文上传插件包，保留后端解析版本和插件类型的专用接口。
-export const uploadPluginFile = createUploadCustomRequest({ url: pluginUploadPath });
+// 文件传输与节点检查分阶段进行，保持统一请求上下文和最终解析结果。
+export const uploadPluginFile = createPluginDriverUpload();
 
 export const add = (data: any) => request.post('/plugin/driver', data)
 

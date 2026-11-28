@@ -13,6 +13,7 @@
         <div v-for="node in applicableNodes" :key="node.serverId" class="plugin-inspection__row">
           <div class="plugin-inspection__identity"><span :title="node.serverId">{{ node.serviceId || node.serverId }}</span><span :class="{ 'plugin-inspection__problem': node.status === 'failed' }">{{ stateText(node) }}</span></div>
           <p class="plugin-inspection__muted">{{ node.serverId }}<template v-if="node.version"> · {{ node.version }}</template></p>
+          <p v-if="node.status === 'loading' && node.progress" class="plugin-inspection__muted">{{ progressLabel(node.progress, t) }} {{ progressAmount(node.progress, locale, t) }}</p>
           <p v-if="node.error" class="plugin-inspection__problem">{{ node.error }}</p>
           <p v-else-if="node.lastError" class="plugin-inspection__muted">{{ t('pluginRuntime.recovered') }} · {{ node.lastError }}</p>
           <div v-if="node.status === 'failed' || canViewLogs && node.error" class="plugin-inspection__actions">
@@ -45,10 +46,11 @@ import { theme } from 'ant-design-vue'
 import { usePluginPermission } from '../../../hooks/usePermission'
 import type { PluginRuntimeInfo } from '../../../api/link/pluginRuntime'
 import { pluginRuntimeState, isPreviousPluginRevision, pluginInstancePreview, type PluginRuntimeInspection } from './runtimeState'
+import { progressLabel, progressAmount } from './installProgress'
 
 const props = defineProps<{ name: string; runtime: PluginRuntimeInspection; canViewLogs: boolean }>()
 const emit = defineEmits<{ refresh: []; retry: [node: PluginRuntimeInfo]; logs: [serverId: string]; close: [] }>()
-const { t } = useI18n(), { token } = theme.useToken()
+const { t, locale } = useI18n(), { token } = theme.useToken()
 const permissionKey = usePluginPermission()
 const now = useTimestamp({ interval: 1000 })
 const previewInstances = computed(() => pluginInstancePreview(props.runtime.instances))
