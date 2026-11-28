@@ -1,4 +1,4 @@
-import type { PluginInstallProgress } from '../../../api/link/pluginInstall'
+import { pluginCheckResult, type PluginInstallProgress } from '../../../api/link/pluginInstallProgress'
 
 type Translate = (key: string, values?: Record<string, unknown>) => string
 
@@ -12,12 +12,14 @@ export function progressLabel(event: PluginInstallProgress, t: Translate): strin
   if (event.attributes?.applicable === false) return t('pluginInstall.unsupported')
   if (event.status === 'FAILED') return t('pluginInstall.failed')
   if (event.status === 'CANCELLED') return t('pluginInstall.cancelled')
-  if (event.attributes?.result) return t('pluginInstall.checked')
+  if (pluginCheckResult(event)) return t('pluginInstall.checked')
   return t(`pluginInstall.${phases[event.name] || 'checking'}`)
 }
 
 export function progressAmount(event: PluginInstallProgress, locale: string, t: Translate): string {
-  const current = Number(event.measurable?.current)
+  const reading = event.measurable?.current
+  if (reading == null) return ''
+  const current = Number(reading)
   if (!Number.isFinite(current) || current < 0) return ''
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
   if (event.measurable?.unitValue === 'bytes') {

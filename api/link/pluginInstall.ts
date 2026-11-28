@@ -2,29 +2,11 @@ import type { UploadProps } from 'ant-design-vue'
 import type { Subscription } from 'rxjs'
 import { createUploadCustomRequest } from '@jetlinks-web-core/components/Upload/utils'
 import { postRuntimeNdJson } from '@jetlinks-web-core/utils/ndjson-precision'
+import { pluginCheckResult, type PluginPackageDescription, type PluginInstallProgress } from './pluginInstallProgress'
+
+export type { PluginPackageDescription, PluginInstallProgress } from './pluginInstallProgress'
 
 type UploadOptions = Parameters<NonNullable<UploadProps['customRequest']>>[0]
-
-export interface PluginPackageDescription {
-  id: string
-  name: string
-  description?: string
-  version: string
-  type: string
-  typeName: string
-  others?: Record<string, unknown>
-}
-
-export interface PluginInstallProgress {
-  name: string
-  type?: 'STEP' | 'MEASURABLE'
-  status: 'STARTED' | 'PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED'
-  message?: string
-  errorMessage?: string
-  measurable?: { current?: number | string; total?: number | string; unitValue?: string; unitText?: string }
-  attributes?: { serverId?: string; serviceId?: string; applicable?: boolean; progressAvailable?: boolean;
-    errorCode?: string; result?: PluginPackageDescription }
-}
 
 export interface PluginDriverUploadResult {
   id: string
@@ -76,8 +58,8 @@ export function createPluginDriverUpload(onProgress: (event: PluginInstallProgre
           next(event) {
             if (!active) return
             onProgress(event)
-            if (event.name === 'plugin.check' && event.status === 'COMPLETED' && event.attributes?.result)
-              result = event.attributes.result
+            const checked = pluginCheckResult(event)
+            if (checked) result = checked
             if (event.status === 'FAILED') {
               const code = event.attributes?.errorCode
               if (!lastError || event.attributes?.serverId || (code && code !== 'error.unable_to_load_plugin_driver'))

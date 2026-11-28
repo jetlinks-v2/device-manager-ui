@@ -28,13 +28,14 @@
             </div>
         </div>
         <div v-if="error" class="plugin-check-progress__error" role="alert">{{ error }}</div>
-        <div v-else-if="latestProgress?.attributes?.result" class="plugin-check-progress__hint">{{ t('pluginInstall.checkOnly') }}</div>
+        <div v-else-if="latestProgress && pluginCheckResult(latestProgress)" class="plugin-check-progress__hint">{{ t('pluginInstall.checkOnly') }}</div>
     </div>
 </template>
 
 <script setup lang="ts">
 import { FileUpload as CoreFileUpload } from '@jetlinks-web-core/components';
 import { createPluginDriverUpload, type PluginInstallProgress } from '../../../api/link/pluginInstall';
+import { pluginCheckResult } from '../../../api/link/pluginInstallProgress';
 import { usePluginFileUpload } from './usePluginFileUpload';
 import { progressLabel, progressAmount } from './installProgress';
 import { computed, onBeforeUnmount, ref } from 'vue';
@@ -75,7 +76,7 @@ const uploadRequest: UploadProps['customRequest'] = options => {
     progress.value = []; latestProgress.value = undefined; showNodes.value = false;
     const handle = createPluginDriverUpload(event => {
         latestProgress.value = event;
-        if (event.attributes?.result) progress.value = progress.value.map(previous =>
+        if (pluginCheckResult(event)) progress.value = progress.value.map(previous =>
             ['STARTED', 'PROGRESS'].includes(previous.status) ? { ...previous, status: 'CANCELLED' } : previous);
         const id = event.attributes?.serverId;
         if (id) progress.value = [...progress.value.filter(previous => previous.attributes?.serverId !== id), event];

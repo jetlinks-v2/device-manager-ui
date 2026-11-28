@@ -7,7 +7,9 @@ const require = createRequire(import.meta.url), ts = require('typescript'), rx =
 function load(path, dependencies) {
   const module = { exports: {} }
   const source = readFileSync(new URL(path, import.meta.url), 'utf8')
-  new Function('require', 'module', 'exports', ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(dependencies, module, module.exports)
+  new Function('require', 'module', 'exports', ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(id =>
+    id.endsWith('/pluginInstallProgress') ? load('../api/link/pluginInstallProgress.ts', () => { throw new Error('Unexpected contract dependency') })
+      : dependencies(id), module, module.exports)
   return module.exports
 }
 
@@ -126,4 +128,16 @@ test('phase names, counters and actionable error guidance have matching zh/en/ja
       assert.equal(presentation.uploadError({ response: { status } }, t), presentation.uploadError({ status }, t))
     }
   }
+})
+
+test('a package-shaped progress attribute does not label the phase as checked', () => {
+  const presentation = load('../views/link/plugin/installProgress.ts', () => { throw new Error('Unexpected dependency') })
+  assert.equal(presentation.progressLabel({ name: 'plugin.download', status: 'PROGRESS', attributes: { result } }, key => key),
+    'pluginInstall.downloading')
+})
+
+test('unknown progress remains distinct from an actual zero reading', () => {
+  const presentation = load('../views/link/plugin/installProgress.ts', () => { throw new Error('Unexpected dependency') })
+  assert.equal(presentation.progressAmount({ name: 'plugin.download', status: 'STARTED', measurable: { current: null, unitValue: 'bytes' } }, 'en', key => key), '')
+  assert.equal(presentation.progressAmount({ name: 'plugin.download', status: 'PROGRESS', measurable: { current: 0, unitValue: 'bytes' } }, 'en', key => key), '0 B')
 })
