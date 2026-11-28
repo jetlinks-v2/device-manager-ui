@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-const source = await readFile(new URL('../views/device/list/unified/index.vue', import.meta.url), 'utf8')
+const source = (await Promise.all(['index.vue', 'useUnifiedDeviceWorkspace.ts', 'UnifiedDeviceResults.vue'].map(file => readFile(new URL('../views/device/list/unified/' + file, import.meta.url), 'utf8')))).join('\n')
 const actionsSource = await readFile(new URL('../views/device/list/unified/useUnifiedDeviceActions.ts', import.meta.url), 'utf8')
 const listSource = await readFile(new URL('../views/device/list/unified/useUnifiedDeviceList.ts', import.meta.url), 'utf8')
 
@@ -23,8 +23,11 @@ test('batch menu accepts the resource-center root, device child, and legacy menu
   assert.match(source, /v-if="canDeviceBatchAction\('enable'\)" key="activateAll"/)
 })
 
-test('shows device actions through each category list-menu permission', () => {
-  assert.match(source, /<table-actions>[\s\S]*:hasPermission="`\$\{deviceMenuCode\}:action`"[\s\S]*:hasPermission="`\$\{deviceMenuCode\}:delete`"[\s\S]*<\/table-actions>/)
+test('state menu retains the existing action permission and confirmation owner', () => {
+  assert.match(source, /authStore.hasPermission\(`\$\{deviceMenuCode.value\}:action`\)/)
+  assert.match(source, /v-if="model.stateAction.allowed"/)
+  assert.match(source, /@toggle="toggle"/)
+  assert.match(actionsSource, /Modal.confirm\(\{ title: t\(enable/)
   assert.match(actionsSource, /return menu\.hasMenu\(provider\.menuCode\)/)
   assert.doesNotMatch(actionsSource, /auth\.hasPermission\(`\$\{provider\.menuCode\}:\$\{action\}`\)/)
 })

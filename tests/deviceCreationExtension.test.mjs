@@ -60,8 +60,8 @@ test('device basics expose group by default and restore product search condition
 })
 
 test('device creation and editing keep group bindings multi-select while preserving a single selected space', () => {
-  assert.match(drawerSource, /:width="960"/)
-  assert.match(drawerSource, /:group-multiple="true"[\s\S]*stack-fields[\s\S]*show-icon/)
+  assert.match(drawerSource, /:width="isEditMode \? 640 : 960"/)
+  assert.match(drawerSource, /:group-multiple="true"[\s\S]*show-icon/)
   assert.match(drawerSource, /stack-fields[\s\S]*group-multiple[\s\S]*:on-area-change="onAreaChange"/)
   assert.match(addDrawerHookSource, /groupId:\s*\[\]\s*as string\[\]/)
   assert.match(addDrawerHookSource, /groupId:\s*form\.groupId\[0\][\s\S]*scenario:[\s\S]*form\.groupId\[0\]/)

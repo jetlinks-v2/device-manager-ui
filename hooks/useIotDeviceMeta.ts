@@ -6,8 +6,15 @@ import type {
   IotTelemetryStatus,
 } from '../types'
 import i18n from '@jetlinks-web-core/locales'
+import { getObjectTypeIcon } from '@jetlinks-web-core/components/IconValue/objectTypeIcons'
 
 const t = (key: string) => i18n.global.t(key)
+const deviceTypeIcons: Readonly<Record<string, string>> = Object.freeze({ device: getObjectTypeIcon('device'), gateway: 'GatewayOutlined', childrenDevice: 'BranchesOutlined' })
+
+/** 按设备节点类型值选平台图标，与产品分类和自定义图片分开。 */
+export function getIotDeviceTypeIcon(value?: string): string {
+  return value && Object.hasOwn(deviceTypeIcons, value) ? deviceTypeIcons[value] : getObjectTypeIcon('device')
+}
 
 export const IOT_DEVICE_CONNECTION_STATUS_META: Record<IotDeviceConnectionStatus, {
   label: string

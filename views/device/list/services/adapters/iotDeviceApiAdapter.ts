@@ -40,6 +40,7 @@ type IotDeviceInstanceAccessInfo = Partial<DeviceInstance> & {
   accessProviderName?: string
   devicePhotoUrl?: string
   lastReportTime?: string | number
+  parentName?: string
 }
 
 const fallbackAdapter = createIotDeviceMockAdapter()
@@ -277,11 +278,14 @@ export function mapApiDevice(
     accessMode: instance.accessProvider || instance.protocolName || instance.transportProtocol || fallback?.accessMode || t('IotDeviceApiAdapter.accessUnset'),
     accessName: accessInfo.accessName || accessInfo.accessProviderName || fallback?.accessName,
     accessProvider: instance.accessProvider || fallback?.accessProvider,
+    accessId: instance.accessId,
     protocol: (instance as any).protocol || (instance as any).messageProtocol || fallback?.protocol,
     transport: (instance as any).transport || (instance as any).transportProtocol || fallback?.transport,
     // 数据解析等入口仅由详情接口返回的协议能力决定；缺失时不能沿用本地兜底设备的旧能力。
     features: Array.isArray((instance as any).features) ? (instance as any).features : [],
     gatewayName: fallback?.gatewayName,
+    parentId: instance.parentId,
+    parentName: accessInfo.parentName,
     identifier: instance.id || fallback?.identifier || '',
     configuration: instance.configuration || {},
     imageUrl: accessInfo.devicePhotoUrl || instance.photoUrl || fallback?.imageUrl,

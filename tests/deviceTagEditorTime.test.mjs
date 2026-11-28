@@ -14,8 +14,31 @@ function load(name) {
   )
   return module.exports
 }
-const { createTagDraft, serializeTagDraft, hasTagValue, findStoredTag } = load('tagEditor')
+const { createTagDraft, serializeTagDraft, hasTagValue, findStoredTag, mergeTagDefinitions, formatTagValue } = load('tagEditor')
 const { useTagEditor } = load('useTagEditor')
+
+test('tag definitions retain stored zero/false values and deletion record IDs', () => {
+  const definitions = [{ id: 'count', name: 'Count', value: 5 }, { id: 'enabled', dataType: { type: 'boolean' }, value: true }]
+  const values = [{ id: 'count-record', key: 'count', value: 0 }, { id: 'enabled-record', key: 'enabled', value: false }]
+  const merged = mergeTagDefinitions(definitions, values)
+  assert.equal(merged[0].value, 0)
+  assert.equal(merged[0].id, 'count-record')
+  assert.equal(merged[0].name, 'Count')
+  assert.equal(merged[1].value, false)
+  assert.equal(merged[1].dataType.type, 'boolean')
+  assert.equal(findStoredTag(values, merged[1]).id, 'enabled-record')
+  assert.equal(mergeTagDefinitions([], values), values)
+  assert.equal(definitions[0].value, 5)
+})
+
+test('tag display resolves enum/boolean labels without treating missing data as a boolean choice', () => {
+  assert.equal(formatTagValue({ value: '0', dataType: { type: 'enum', elements: [{ text: 'Zero', value: 0 }] } }), 'Zero')
+  assert.equal(formatTagValue({ value: false, dataType: { type: 'boolean', trueValue: true, trueText: 'On', falseValue: false, falseText: 'Off' } }), 'Off')
+  assert.equal(formatTagValue({ dataType: { type: 'boolean', trueText: 'On', falseText: 'Off' } }), undefined)
+  assert.equal(formatTagValue({ value: 0 }), 0)
+  assert.equal(formatTagValue({ value: false }), false)
+  assert.equal(formatTagValue({ value: 'unknown', formatValue: 'Server display' }), 'Server display')
+})
 
 test('time-only and date-only tags round-trip without adding a date or time', () => {
   for (const [format, input, expected] of [

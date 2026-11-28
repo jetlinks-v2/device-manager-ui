@@ -1,21 +1,23 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { getToken } from '@jetlinks-web/utils'
 import { useMenuStore } from '@jetlinks-web-core/store'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
 import { isPrivateDeployment } from '@jetlinks-web-core/utils/deployment'
-import { countDevice_api, queryDevicePage_api, type DeviceLibraryProductFilterOption, type DeviceQueryTerm } from '../../../../api/device'
+import { countDevice_api, type DeviceLibraryProductFilterOption, type DeviceQueryTerm } from '../../../../api/device'
 import { queryDeviceLibraryProductFilterOptions_api } from '../../../../api/device-library'
-import { queryRuntimeDevices_api } from '../../../../api/deviceGroup'
 import { buildIotDeviceDetailPath, getIotDeviceListMenuCode, isIotDeviceListEntry, resolveIotProjectId } from '../hooks/useIotDeviceRouting'
 import type { DeviceListProvider, UnifiedDevice } from '../../../../deviceListProvider'
 import { useDeviceScope } from '../../../../deviceScope'
 import { decodeConditionFilterQuery, encodeConditionFilterQuery, type ConditionFilterTerm } from '@jetlinks-web-core/components/ConditionFilter'
 import { getDeviceListFilterFields, getDeviceListSearchTerms } from '../../../../deviceListFilter'
-import type { SlantedTabOption } from '@jetlinks-web-core/components/SlantedTabs'
 import { useSupportedDeviceListProviders } from '../hooks/useSupportedDeviceListProviders'
+import { useUnifiedDeviceRows, type DeviceRowsSnapshot } from './useUnifiedDeviceRows'
 
-/** 单一设备实例分页，类型 Provider 仅提供限定和字段补充，避免跨列表拼页和重复计数。 */
+let retainedList: { identity: string; snapshot: DeviceRowsSnapshot; readingIndex: number; readingOffset: number } | undefined
+
+/** 单一设备实例集合，类型 Provider 仅提供限定和字段补充。 */
 export function useUnifiedDeviceList() {
   const route = useRoute()
   const router = useRouter()
@@ -66,23 +68,18 @@ export function useUnifiedDeviceList() {
   const commonFilterFields = computed(() => filterFields.value.map(field => String(field.dataIndex)))
   const searchTerms = ref<ConditionFilterTerm[]>([])
   const status = computed(() => String(route.query.status || 'all'))
-  const total = ref(0)
-  const pageIndex = ref(0)
-  const pageSize = ref(12)
-  const loading = ref(false)
-  const error = ref('')
   const counts = ref<Record<string, number>>({})
-  // 斜边页签以 key 识别选中项，数量独立传入以保留 0 和统一间距。
-  const tabs = computed<SlantedTabOption[]>(() => [
-    { key: 'all', label: t('UnifiedDeviceList.all'), count: counts.value.all ?? '—' },
+  const countsLoading = ref(false)
+  const tabs = computed(() => [
+    { key: 'all', label: t('UnifiedDeviceList.all'), count: counts.value.all, countLoading: countsLoading.value },
     ...providers.value.filter(provider => provider.id !== 'device' && provider.showInTabs !== false).map(provider => ({
-      key: provider.id, label: provider.label(), count: counts.value[provider.id] ?? '—',
+      key: provider.id, label: provider.label(), count: counts.value[provider.id], countLoading: countsLoading.value,
     })),
   ])
   const statusCounts = ref<Record<string, number>>({})
+  const statusCountsLoading = ref(false)
   const selectedIds = ref<string[]>([])
   const batchMode = ref(false)
-  let requestVersion = 0
   let countVersion = 0
   let statusCountVersion = 0
 
@@ -103,54 +100,38 @@ export function useUnifiedDeviceList() {
   const classify = (device: UnifiedDevice) => extensions.find(provider => provider.matches(device))?.id || 'device'
   const providerOf = (device: UnifiedDevice) => providers.value.find(provider => provider.id === device.category)
 
-  async function load() {
-    const version = ++requestVersion
-    loading.value = true; error.value = ''; selectedIds.value = []
-    if (!providers.value.length) { rows.value = []; total.value = 0; loading.value = false; return }
-    try {
-      await scope.ensureReady()
-      const result = await queryDevicePage_api({ pageIndex: pageIndex.value, pageSize: pageSize.value, terms: filterTerms.value, sorts: [{ name: 'createTime', order: 'desc' }, { name: 'id', order: 'asc' }] }, baseTerms.value)
-      if (version !== requestVersion) return
-      let data = result.data.map(device => ({ ...device, category: '' } as UnifiedDevice))
-      data.forEach(device => { device.category = classify(device) })
-      // 时间列只在全部分类显示，按当前页 ID 批量补齐运行态时间，关闭无关告警聚合。
-      const selectedProvider = activeProvider.value
-      // 补齐字段只服务当前分类；“全部设备”不能因未打开的视频或网关扩展发起额外查询。
-      const enrichment = selectedProvider?.enrich
-        ? selectedProvider.enrich(data.filter(device => device.category === selectedProvider.id))
-        : Promise.resolve<UnifiedDevice[]>([])
-      const [enriched, runtime] = await Promise.all([
-        enrichment,
-        activeType.value === 'all' && data.length ? queryRuntimeDevices_api({
-          pageIndex: 0, pageSize: data.length,
-          terms: [{ column: 'id', termType: 'in', value: data.map(device => device.id) }],
-          withAlarmInfo: false,
-        }, baseTerms.value) : undefined,
-      ])
-      const extras = new Map(enriched.map(device => [device.id, device]))
-      const reportTimes = new Map(runtime?.data.map(device => [device.id, device.lastReportTime]))
-      data = data.map(device => {
-        const current = extras.get(device.id) || device
-        const runtimeTime = reportTimes.get(device.id)
-        // 离线、禁用时与详情头部保持一致，取最近上下线时间；在线仍沿用运行态接口。
-        const lastReportTime = current.connectionStatus === 'offline' || current.connectionStatus === 'disabled'
-          ? Math.max(current.onlineAt || 0, current.offlineAt || 0) || runtimeTime
-          : runtimeTime
-        return { ...current, lastReportTime }
-      })
-      if (version !== requestVersion) return
-      rememberProductLabels(data)
-      rows.value = data; total.value = result.total
-    } catch (reason) {
-      if (version === requestVersion) { rows.value = []; total.value = 0; error.value = reason instanceof Error ? reason.message : t('UnifiedDeviceList.loadFailed') }
-    } finally { if (version === requestVersion) loading.value = false }
+  const rowState = useUnifiedDeviceRows({ rows, prepare: scope.ensureReady,
+    context: () => ({ type: activeType.value, provider: activeProvider.value, terms: filterTerms.value, baseTerms: baseTerms.value }),
+    classify, onRows: rememberProductLabels, errorMessage: () => t('UnifiedDeviceList.loadFailed'),
+  })
+  const error = rowState.error
+  const readingIndex = ref(0)
+  const readingOffset = ref(0)
+  const cacheIdentity = () => JSON.stringify([getToken(), resolveIotProjectId(route), activeType.value, route.query.q, status.value,
+    scope.scopeType.value, scope.scopeId.value, authorizedProviders.value.map(provider => provider.id)])
+  function load(retain = false) {
+    clearBatchSelection()
+    if (!retain) {
+      readingIndex.value = 0; readingOffset.value = 0
+      if (retainedList && retainedList.identity === cacheIdentity()) {
+        readingIndex.value = retainedList.readingIndex; readingOffset.value = retainedList.readingOffset; rowState.restore(retainedList.snapshot)
+        retainedList = undefined; retain = true
+      }
+    }
+    void rowState.reload(retain)
+  }
+  // 仅在用户打开设备详情前保留一份内存快照；返回后后台重验，不跨登录上下文复用。
+  function rememberList() {
+    retainedList = { identity: cacheIdentity(), snapshot: rowState.snapshot(), readingIndex: readingIndex.value, readingOffset: readingOffset.value }
   }
   async function loadCounts() {
     if (isIotEntry.value) {
       counts.value = {}
+      countsLoading.value = false
       return
     }
     const version = ++countVersion
+    countsLoading.value = true
     try {
       const values = await Promise.all([
         ...providers.value.filter(provider => provider.id !== 'device').map(async provider => [provider.id, await countDevice_api({}, provider.terms())] as const),
@@ -159,10 +140,12 @@ export function useUnifiedDeviceList() {
       ])
       if (version === countVersion) counts.value = Object.fromEntries(values)
     } catch { if (version === countVersion) counts.value = {} }
+    finally { if (version === countVersion) countsLoading.value = false }
   }
   // 快捷状态的数量统计整个筛选范围，不受当前页和已点击的状态按钮限制。
   async function loadStatusCounts() {
     const version = ++statusCountVersion
+    statusCountsLoading.value = true
     statusCounts.value = {}
     try {
       await scope.ensureReady()
@@ -175,6 +158,7 @@ export function useUnifiedDeviceList() {
       ] as const))
       if (version === statusCountVersion) statusCounts.value = Object.fromEntries(values)
     } catch { if (version === statusCountVersion) statusCounts.value = {} }
+    finally { if (version === statusCountVersion) statusCountsLoading.value = false }
   }
   function changeType(type: string) {
     clearBatchSelection()
@@ -211,7 +195,6 @@ export function useUnifiedDeviceList() {
   // 再次点击已选状态即取消，其他搜索条件及左侧范围保持不变。
   function changeStatus(value: string) { void router.replace({ query: { ...route.query, status: value === status.value ? undefined : value } }) }
   function refresh() { refreshKey.value++; void loadCounts() }
-  function changePage(page: number, size: number) { pageIndex.value = size === pageSize.value ? page - 1 : 0; pageSize.value = size; void load() }
   // 产品与接入方式共用原设备列表的选项接口，区域和分组直接复用侧栏数据。
   watch(() => resolveIotProjectId(route), async (projectId, _, onCleanup) => {
     let cancelled = false
@@ -226,13 +209,15 @@ export function useUnifiedDeviceList() {
       if (!cancelled) error.value = reason instanceof Error ? reason.message : t('UnifiedDeviceList.loadFailed')
     }
   }, { immediate: true })
-  watch([activeType, () => route.query.q, status, scope.scopeType, scope.scopeId, refreshKey], () => {
-    searchTerms.value = decodeConditionFilterQuery(route.query.q, filterFields.value); pageIndex.value = 0; void load()
+  watch([activeType, () => route.query.q, status, scope.scopeType, scope.scopeId, () => resolveIotProjectId(route), refreshKey], (current, previous) => {
+    searchTerms.value = decodeConditionFilterQuery(route.query.q, filterFields.value)
+    const sameQuery = previous?.length && current.slice(0, -1).every((value, index) => value === previous[index])
+    load(Boolean(sameQuery))
   }, { immediate: true })
   watch([baseTerms, () => route.query.q, scope.scopeType, scope.scopeId, () => resolveIotProjectId(route), refreshKey], () => {
     void loadStatusCounts()
   }, { immediate: true })
   watch([isIotEntry, providers], loadCounts, { immediate: true })
-  onBeforeUnmount(() => { requestVersion++; countVersion++; statusCountVersion++ })
-  return { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, pageIndex, pageSize, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, changePage, clearBatchSelection }
+  onBeforeUnmount(() => { countVersion++; statusCountVersion++ })
+  return { ...rowState, countsLoading, statusCountsLoading, providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, clearBatchSelection, readingIndex, readingOffset, rememberList }
 }

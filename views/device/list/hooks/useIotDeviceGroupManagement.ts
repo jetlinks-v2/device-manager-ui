@@ -5,8 +5,10 @@ import {
   createDeviceGroup_api,
   deleteDeviceGroup_api,
   updateDeviceGroup_api,
+  saveDeviceGroupTree_api,
   type DeviceGroup,
 } from '@device-manager-ui/api/deviceGroup'
+import { planGroupMove, type GroupMoveIntent, type GroupFormValue } from './iotDeviceGroupTreeInteractions'
 
 type ScopeChange = { type: 'area' | 'group'; id: string }
 type GroupDialogMode = 'create' | 'createChild' | 'edit'
@@ -15,6 +17,7 @@ interface IotDeviceGroupManagementOptions {
   getActiveScope: () => ScopeChange
   reloadGroups: () => Promise<void>
   changeScope: (scope: ScopeChange) => void
+  getGroups: () => DeviceGroup[]
 }
 
 const $t = i18n.global.t
@@ -26,6 +29,7 @@ export function useIotDeviceGroupManagement(options: IotDeviceGroupManagementOpt
   const groupEditing = ref<DeviceGroup | null>(null)
   const groupSaving = ref(false)
   const groupDialogError = ref('')
+  const groupMoving = ref(false)
 
   function openCreateGroup() {
     groupDialogMode.value = 'create'
@@ -48,7 +52,7 @@ export function useIotDeviceGroupManagement(options: IotDeviceGroupManagementOpt
     groupDialogOpen.value = true
   }
 
-  async function saveGroup(name: string) {
+  async function saveGroup({ name, parentId }: GroupFormValue) {
     groupSaving.value = true
     groupDialogError.value = ''
     try {
@@ -59,14 +63,14 @@ export function useIotDeviceGroupManagement(options: IotDeviceGroupManagementOpt
           id: editing.id,
           code: editing.key || editing.id,
           name,
-          parentId: editing.parentId,
+          parentId,
           description: editing.description,
           sortIndex: editing.sortIndex,
         })
         : await createDeviceGroup_api({
           code: `group_${Date.now().toString(36)}`,
           name,
-          parentId: groupDialogMode.value === 'createChild' ? editing?.id : undefined,
+          parentId,
         })
 
       await options.reloadGroups()
@@ -78,6 +82,27 @@ export function useIotDeviceGroupManagement(options: IotDeviceGroupManagementOpt
       groupDialogError.value = error instanceof Error ? error.message : $t('IotDeviceList.scope.groupSaveFailed')
     } finally {
       groupSaving.value = false
+    }
+  }
+
+  async function moveGroup(intent: GroupMoveIntent) {
+    if (groupMoving.value || groupSaving.value) return false
+    const patches = planGroupMove(options.getGroups(), intent)
+    if (!patches) return false
+    if (!patches.length) return true
+    groupMoving.value = true
+    let saved = false
+    try {
+      await saveDeviceGroupTree_api(patches)
+      saved = true
+      await options.reloadGroups()
+      onlyMessage($t('IotDeviceList.scope.groupMoved'), 'success')
+      return true
+    } catch (error) {
+      onlyMessage(saved ? $t('IotDeviceList.scope.groupMoveRefreshFailed') : error instanceof Error ? error.message : $t('IotDeviceList.scope.groupMoveFailed'), 'error')
+      return false
+    } finally {
+      groupMoving.value = false
     }
   }
 
@@ -102,6 +127,8 @@ export function useIotDeviceGroupManagement(options: IotDeviceGroupManagementOpt
     groupDialogOpen,
     groupEditing,
     groupSaving,
+    groupMoving,
+    moveGroup,
     openCreateChildGroup,
     openCreateGroup,
     openEditGroup,

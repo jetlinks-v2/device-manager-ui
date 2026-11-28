@@ -1,7 +1,9 @@
-/* 标签扩展会增高中间列；抵消居中布局的半程位移，保持两侧原有位置。 */
-
-/* 详情页外壳与边缘节点详情保持同一套双卡片节奏；业务内容仍由 #260 宿主决定。 */
+/* 摘要、导航与正文共用路由面板，业务内容仍由各 Provider 决定。 */
 .iot-device-detail {
+  --detail-workspace-gutter:var(--space-4);
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
   min-width: 0;
   min-height: 0;
 }
@@ -10,15 +12,29 @@
   display: grid;
   align-content: start;
   min-width: 0;
-  min-height: calc(100vh - 5rem);
-  gap: var(--space-3);
+  width:100%;
+  flex:1 1 auto;
+  min-height: 0;
+  gap: 0;
 }
 
 .iot-device-detail__summary-card {
-  margin-block: var(--space-4);
+  position:relative;
+  z-index:2;
+  min-width:0;
+  padding:12px var(--detail-workspace-gutter);
 }
 
-.iot-device-detail__summary-card,
+.iot-device-detail__tabs {
+  --slanted-tabs-padding-inline:var(--detail-workspace-gutter);
+  --slanted-tabs-active-color:var(--jet-theme-primary);
+  --slanted-tabs-top-line-color:var(--line);
+  --slanted-tabs-border-color:var(--line);
+  --slanted-tabs-background:color-mix(in srgb, var(--bg-sunken) 65%, var(--jet-theme-bg-container));
+  --slanted-tabs-inactive-bg:transparent;
+  --slanted-tabs-active-bg:var(--jet-theme-bg-container);
+}
+
 .iot-device-detail__content-card {
   min-width: 0;
   overflow: hidden;
@@ -28,20 +44,15 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding-inline:var(--detail-workspace-gutter);
 }
 
 .iot-device-detail__legacy-content {
   min-width: 0;
-  min-height: 32rem;
+  min-height: 0;
 }
 
-/* ContentPanel renders an empty title row when no title is supplied. */
-.iot-device-detail__summary-card :deep(> .ant-flex:empty),
-.iot-device-detail__content-card :deep(> .ant-flex:empty) {
-  display: none;
-}
-
-/* The card is the visual boundary; the #260 tab shell supplies only its content layout. */
+/* 路由面板提供外框，内层只保留内容布局。 */
 .iot-device-detail__content-card :deep(.dd-tab-shell) {
   border: 0;
   border-radius: 0;
@@ -54,8 +65,9 @@
 }
 
 @media (max-width: 62rem) {
+  .iot-device-detail { --detail-workspace-gutter:var(--space-3); }
   .iot-device-detail__content-card :deep(.dd-tab-content) {
-    padding: var(--space-3);
+    padding: var(--space-3) 0;
   }
 }
 

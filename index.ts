@@ -129,12 +129,18 @@ const getCoreRouteOverrides = () => {
 const getComponents = () => ({})
 
 /**
- * 仪表盘自绘背景；其余页面沿用平台默认 ContentPanel 的留白和背景。
+ * 设备列表/详情由内部区域提供留白，仪表盘自绘背景，其余页面沿用默认面板。
  *
  * 键为路由 `name`（即菜单 `code`）。声明在代码侧，改完随代码生效，
  * 不需要把开关写进 `baseMenu.json` 再重新初始化菜单。
  */
 const getContentPanelOverrides = () => ({
+  'iot-user-device-list': { padding: 0 },
+  'iot-user/device/list': { padding: 0 },
+  'device/list': { padding: 0 },
+  'iot-user-device-list/Detail': { padding: 0, bordered: true },
+  'iot-user/device/list/Detail': { padding: 0, bordered: true },
+  'device/list/Detail': { padding: 0, bordered: true },
   'link/DashBoard': false,
 })
 

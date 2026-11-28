@@ -13,6 +13,7 @@ import {
 } from '@device-manager-ui/api/device'
 import { DEVICE_CATEGORY_META } from './useDeviceLibraryMeta'
 import { getObjectTypeIcon } from '@jetlinks-web-core/components/IconValue/objectTypeIcons'
+import { useIotDeviceParentLink } from './useIotDeviceParentLink'
 import { useDeviceLibrary } from './useDeviceLibrary'
 import { useIotDataAccessRefresh } from './useIotDataAccessRefresh'
 import { buildIotDeviceHealthPath, buildIotDeviceListPath, resolveIotProjectId } from './useIotDeviceRouting'
@@ -120,6 +121,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const beginLoad = () => { loadVersion += 1; return currentLoad() }
 
   const device = ref<IotDevice | null>(null)
+  const parentDeviceLink = useIotDeviceParentLink(device)
   const instanceStore = useInstanceStore()
   const provider = useDeviceListProvider(device)
   const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
@@ -127,6 +129,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const initializing = ref(true)
   const extensionTabs = useDeviceDetailTabs(device)
   const canDeviceAction = useDeviceDetailPermissions(device)
+  const canInlineEditDeviceMetadata = computed(() => canDeviceAction('update') && !provider.value?.editRoute)
   // 物模型编辑与详情头部“编辑”共用同一授权规则，避免物联旧菜单缺少按钮 id 时出现权限分叉。
   const deviceUpdatePermission = computed(() => props.embedded?.updatePermission ?? canDeviceAction('update'))
   const hasTransparentCodec = computed(() =>
@@ -150,7 +153,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const tagsExpanded = ref(false)
   const tagsOverflow = ref(false)
   const tagsExpandedOffset = ref(0)
-  const editDrawerOpen = ref(false)
   const actionBusyId = ref('')
   const actionKind = ref<'toggle' | 'delete' | ''>('')
   const actionError = ref('')
@@ -307,7 +309,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       })
       return
     }
-    editDrawerOpen.value = true
   }
 
   function backToDeviceList() {
@@ -332,11 +333,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     const productId = device.value?.productId || device.value?.productKey
     if (!productId || !canOpenProductDetail.value) return
     deviceMenu.jumpPage('device/Product/Detail', { params: { id: productId } })
-  }
-
-  async function onDeviceSaved() {
-    editDrawerOpen.value = false
-    await loadAll()
   }
 
   async function toggleDeviceEnabled() {
@@ -1657,7 +1653,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     tagsExpanded,
     tagsOverflow,
     tagsExpandedOffset,
-    editDrawerOpen,
     actionBusyId,
     actionKind,
     canOpenProductDetail,
@@ -1666,9 +1661,9 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     setActiveTab,
     setInnerTab,
     openEditDrawer,
+    ...parentDeviceLink,
     openProductDetail,
     backToDeviceList,
-    onDeviceSaved,
     toggleDeviceEnabled,
     copyDeviceId,
     confirmDeleteDevice,
@@ -1716,6 +1711,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     setPropertyPageRealtimeKeys,
     activeExtension,
     canDeviceAction,
+    canInlineEditDeviceMetadata,
     loadAll,
   }
 }

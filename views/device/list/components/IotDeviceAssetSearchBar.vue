@@ -1,6 +1,7 @@
 <template>
   <section class="device-asset-search">
     <ConditionFilter
+      :compact="compact"
       :fields="filterFields"
       :commonFields="commonFilterFields"
       :modelValue="editorTerms"
@@ -20,6 +21,7 @@ import ConditionFilter, {
 } from '@jetlinks-web-core/components/ConditionFilter'
 
 const props = defineProps({
+  compact: { type: Boolean, default: true },
   filterFields: {
     type: Array as PropType<ConditionFilterField[]>,
     default: () => [],

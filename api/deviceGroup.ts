@@ -449,10 +449,13 @@ export const updateDeviceGroup_api = async (input: UpdateDeviceGroupInput): Prom
     description: input.description,
     sortIndex: input.sortIndex ?? 0,
   }) as ApiResponse<DeviceGroupResponse>
-  const result = unwrapResult<DeviceGroupResponse>(response) ?? { key: input.code, ...input }
-
-  return toDeviceGroup(result)
+  const result = unwrapResult<DeviceGroupResponse | boolean>(response)
+  return toDeviceGroup({ ...input, key: input.code, ...(result && typeof result === 'object' ? result : {}) })
 }
+
+/** 复用平台的事务树保存，同时维护父级、排序及后代路径；省略无关业务字段。 */
+export const saveDeviceGroupTree_api = (patches: Array<{ id: string; parentId?: string; sortIndex: number }>): Promise<unknown> =>
+  request.patch('/device/group', patches)
 
 export const deleteDeviceGroup_api = (groupId: string): Promise<void> =>
   request.remove(`/device/group/${groupId}`)
