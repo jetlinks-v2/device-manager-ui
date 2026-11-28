@@ -13,18 +13,19 @@ const flush = async () => { for (let i = 0; i < 4; i++) { await new Promise(reso
 const device = id => ({ id: String(id), name: String(id), productId: 'p', connectionStatus: 'online' })
 const page = (start, length = 50, total = 120) => ({ data: Array.from({ length }, (_, i) => device(start + i)), total })
 
-function setup(t, query, enrich = async () => []) {
-  const calls = [], runtimeCalls = [], exports = {}, scope = vue.effectScope(), rows = vue.ref([])
+function setup(t, query, enrich = async () => [], activity = async params => ({ data: params.terms[0].value.map(id => ({ ...device(id), connectTime: 1000, lastReportTime: 2000 })) })) {
+  const calls = [], runtimeCalls = [], activityCalls = [], exports = {}, scope = vue.effectScope(), rows = vue.ref([])
   const provider = { id: 'device', enrich: async data => { runtimeCalls.push(data); return enrich(data) } }
   const context = { value: { type: 'device', provider, terms: [], baseTerms: [] } }
   new Function('require', 'exports', code)(id => ({
     '../../../../api/device': { queryDevicePage_api: async (...args) => { calls.push(args); return query(...args) } },
+    '../../../../api/deviceGroup': { queryRuntimeDevices_api: async (...args) => { activityCalls.push(args); return activity(...args) } },
   })[id] || require(id), exports)
   const list = scope.run(() => exports.useUnifiedDeviceRows({ rows, prepare: async () => {}, context: () => context.value,
     classify: () => context.value.type === 'all' ? 'device' : context.value.type, onRows() {}, errorMessage: () => 'failed',
   }))
   t.after(() => scope.stop())
-  return { ...list, rows, calls, runtimeCalls, context, scope }
+  return { ...list, rows, calls, runtimeCalls, activityCalls, context, scope }
 }
 
 test('first batch appears before optional provider enrichment', async t => {
@@ -116,12 +117,52 @@ test('old provider enrichment cannot overwrite the same id in a newer filter', a
   assert.equal(list.rows.value[0].channelNumber, 222)
 })
 
-test('all-device results need no provider or runtime enrichment request', async t => {
+test('all-device results skip provider enrichment but load runtime by bounded authorized IDs', async t => {
   const list = setup(t, async () => page(0))
   list.context.value = { type: 'all', terms: [], baseTerms: [] }
   await list.reload(); await flush()
   assert.equal(list.runtimeCalls.length, 0)
   assert.deepEqual(list.details.value, {})
+  assert.equal(list.activityCalls.length, 1)
+  const [params, baseTerms] = list.activityCalls[0]
+  assert.equal(params.withAlarmInfo, false)
+  assert.equal(params.pageSize, 50)
+  assert.deepEqual(params.terms, [{ column: 'id', termType: 'in', value: list.rows.value.map(row => row.id) }])
+  assert.deepEqual(baseTerms, [])
+  assert.deepEqual(list.runtime.value['0'], { state: 'ready', connectedAt: 1000, lastActivityAt: 2000 })
+})
+
+test('runtime skeleton does not block rows and a failure retries only requested IDs', async t => {
+  const pending = deferred(); let broken = true
+  const list = setup(t, () => page(0, 2, 2), async () => [], () => broken ? pending.promise : { data: [{ ...device(0), lastReportTime: null }] })
+  await list.reload()
+  assert.equal(list.loading.value, false)
+  assert.equal(list.runtime.value['0'].state, 'loading')
+  pending.reject(Error('unavailable')); await flush()
+  assert.equal(list.error.value, '')
+  assert.equal(list.runtime.value['0'].state, 'error')
+  broken = false; list.retryDetails(['0', 'missing']); await flush()
+  assert.equal(list.activityCalls.at(-1)[0].pageSize, 1)
+  assert.deepEqual(list.runtime.value['0'], { state: 'ready', connectedAt: undefined, lastActivityAt: undefined })
+  assert.equal(list.runtime.value['1'].state, 'error')
+})
+
+test('late runtime response cannot overwrite the same ID in a new query or a disposed scope', async t => {
+  const old = deferred(); let calls = 0
+  const list = setup(t, () => page(0, 1, 1), async () => [], () => ++calls === 1 ? old.promise : { data: [{ ...device(0), lastReportTime: 6000 }] })
+  await list.reload(); await flush()
+  list.context.value = { type: 'gateway', terms: [], baseTerms: [{ column: 'kind', value: 'gateway' }] }
+  await list.reload(); await flush()
+  assert.equal(list.runtime.value['0'].lastActivityAt, 6000)
+  assert.deepEqual(list.activityCalls[1][1], list.context.value.baseTerms)
+  old.resolve({ data: [{ ...device(0), lastReportTime: 9999 }] }); await flush()
+  assert.equal(list.runtime.value['0'].lastActivityAt, 6000)
+  const snapshot = list.snapshot()
+  assert.equal(snapshot.runtime['0'].lastActivityAt, 6000)
+  const late = deferred(), stopped = setup(t, () => page(0, 1, 1), async () => [], () => late.promise)
+  await stopped.reload(); await flush(); stopped.scope.stop()
+  late.resolve({ data: [{ ...device(0), lastReportTime: 9999 }] }); await flush()
+  assert.equal(stopped.runtime.value['0'].state, 'loading')
 })
 
 test('refresh retains the visible collection while bounded batches rebuild its loaded extent', async t => {

@@ -12,7 +12,7 @@ export function useDeviceListViewport(
   const { width, height } = useElementSize(viewport)
   const compact = computed(() => width.value > 0 && width.value < 640)
   const tableRowHeight = computed(() => model.value.activeType === 'gateway' && model.value.monitorCell ? 88 : 72)
-  const cardHeight = computed(() => model.value.activeType === 'gateway' && model.value.monitorCell ? (width.value <= 420 ? 272 : 240) : 184)
+  const cardHeight = computed(() => model.value.activeType === 'gateway' && model.value.monitorCell ? (width.value <= 420 ? 272 : 240) : width.value <= 420 ? 184 : 168)
   const headerHeight = 48
   const bodyHeight = computed(() => Math.max(1, height.value - headerHeight))
   let top = 0, restoring = false, restoreVersion = 0

@@ -88,7 +88,13 @@ export type DeviceDetailResponse = {
   orgName?: string
   classifiedName?: string
   accessName?: string
+  accessId?: string
   accessProvider?: string
+  protocol?: string
+  protocolName?: string
+  transport?: string
+  parentId?: string
+  parentName?: string
   description?: string
   i18nMessages?: Record<string, Record<string, string>>
   describe?: string

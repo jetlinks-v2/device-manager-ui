@@ -113,6 +113,7 @@ export interface IotDevice {
   parentName?: string
   /** 真实设备实例协议 ID，透明编解码调试查询协议路由时使用。 */
   protocol?: string
+  protocolName?: string
   /** 真实设备实例传输协议，透明编解码调试区分 Topic / URL 时使用。 */
   transport?: string
   /** 设备实例能力特性，按旧版详情用于显示数据解析等功能页签。 */

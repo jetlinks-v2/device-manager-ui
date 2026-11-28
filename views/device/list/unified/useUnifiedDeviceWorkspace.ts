@@ -212,7 +212,7 @@ const resultsModel = computed(() => ({
   rows: rows.value, total: list.hasLoaded.value ? total.value : undefined,
   selectedIds: selectedIds.value, loading: loading.value, loadingMore: list.loadingMore.value,
   error: error.value, appendError: list.appendError.value, hasMore: list.hasMore.value, hasSearch: hasSearch.value,
-  details: list.details.value, revision: list.revision.value, readingIndex: list.readingIndex.value, readingOffset: list.readingOffset.value,
+  details: list.details.value, runtime: list.runtime.value, revision: list.revision.value, readingIndex: list.readingIndex.value, readingOffset: list.readingOffset.value,
   activeType: activeType.value, showCategory: activeType.value === 'all' && providers.value.length > 1,
   categoryLabels: Object.fromEntries(providers.value.map(provider => [provider.id, provider.label()])),
   showArea: spaceAreaSupported.value !== false, showChannel: channelSupported.value === true,
