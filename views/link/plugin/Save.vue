@@ -158,6 +158,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue';
+import type { Rule } from 'ant-design-vue/es/form';
 import { I18nTextField, type I18nMessages } from '@jetlinks-web-core/components';
 import {
     ID_Rule,
@@ -223,7 +224,7 @@ const vailId = async (_: any, value: string) => {
 
 const nameRules = [RequiredStringFn($t('plugin.Save.128565-5')), ...Max_Length_64];
 
-const providerRules = [
+const providerRules: Rule[] = [
     {
         required: true,
         message: $t('plugin.Save.providerRequired', '请选择来源'),
@@ -231,7 +232,7 @@ const providerRules = [
     },
 ];
 
-const IdRules = [
+const IdRules: Rule[] = [
     ...ID_Rule,
     {
         validator: vailId,
@@ -239,7 +240,7 @@ const IdRules = [
     },
 ];
 
-const versionRule = [
+const versionRule: Rule[] = [
     {
         required: true,
         message: $t('plugin.Save.128565-13'),
@@ -387,6 +388,7 @@ const uploadChange = (data: FileUploadResult) => {
         resolvePluginTypeId((data as any)?.others?.type) ||
         modelRef.type;
     modelRef.filename = data.filename;
+    modelRef.version = data.version;
     modelRef.configuration = {
         ...(modelRef.configuration || {}),
         location: data.accessUrl,
@@ -432,9 +434,9 @@ const handleSave = async () => {
                 ? await update(payload)
                 : await add(payload);
             if (resp?.success) {
-                onlyMessage($t('plugin.Save.128565-14'));
+                onlyMessage($t('pluginRuntime.saved'));
                 onBack(resp);
-                emit('ok');
+                emit('ok', payload);
                 formRef.value.resetFields();
                 return;
             }

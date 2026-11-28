@@ -1,404 +1,122 @@
 <template>
-
-  <DefineEmptyCreate>
-    <j-permission-button
-     type="primary"
-     @click="handleAdd"
-     :hasPermission="`${permissionKey}:add`"
-    >
-     <template #icon>
-      <AIcon type="PlusOutlined"/>
-     </template>
-     {{ $t('plugin.index.293829-0') }}
-    </j-permission-button>
-  </DefineEmptyCreate>
-  <FullPage>
-    <JProTable
-      ref="instanceRef"
-      :columns="columns"
-      :request="queryPage"
-      modeValue="CARD"
-      :defaultParams="{
-                    sorts: [{ name: 'createTime', order: 'desc' }],
-                }"
-      :params="params"
-      :gridColumn="3"
-      :gridColumns="[2, 3]"
-      class="pro-table__no-padding"
-    >
-      <template #emptyText>
-        <CloudEmpty :search="params?.terms" :search-name="$t('components.SecondKind.311605-0')">
-          <EmptyCreateButton />
-        </CloudEmpty>
-      </template>
-      <template #headerLeftRender>
-        <div class="access-component-list-toolbar">
-          <h2 class="access-component-list-title">
-            {{ $t('AccessComponent.listTitle.plugin') }}
-          </h2>
-          <slot name="headerLeftRender" />
-        </div>
-      </template>
-      <template #headerRightRender>
-	      <a-flex :gap="16">
-		      <ConditionFilter
-			      class="access-component-list-search"
-			      :columns="columns"
-			      target="link-plugin"
-			      @search="handleSearch"
-		      />
-		      <EmptyCreateButton />
-	      </a-flex>
-      </template>
-
-      <template #card="slotProps">
-        <CardBox
-          action-layout="split"
-          primary-action-key="update"
-          :value="slotProps"
-          :actions="getActions(slotProps,'card')"
-          :showStatus="false"
-          @click="()=>viewDetail(slotProps)"
-        >
-          <template #img>
-            <img
-              :width="80"
-              :height="80"
-              :src="link.plug"
-            />
-          </template>
-          <template #content>
-            <div>
-              <div>
-                <a-tag class="plugin-version">{{
-                    slotProps.version
-                  }}
-                </a-tag>
-              </div>
-              <j-ellipsis
-                style="
-                                        width: calc(100% - 100px);
-                                        margin-bottom: 18px;
-                                    "
-              >
-                                    <span
-                                      style="
-                                            font-size: 16px;
-                                            font-weight: 600;
-                                        "
-                                    >
-                                        {{ getI18nText(slotProps, 'name') }}
-                                    </span>
-              </j-ellipsis>
-            </div>
-            <a-row>
-              <a-col :span="12">
-                <div class="card-item-content-text">
-                  {{ $t('plugin.index.293829-1') }}
-                </div>
-                <j-ellipsis style="width: 100%">
-                  {{ slotProps.id }}
-                </j-ellipsis>
-              </a-col>
-              <a-col :span="12">
-                <div class="card-item-content-text">
-                  {{ $t('plugin.index.293829-2') }}
-                </div>
-                <j-ellipsis style="width: 100%">
-                  {{ getPluginTypeLabel(slotProps.type) }}
-                </j-ellipsis>
-              </a-col>
-            </a-row>
-          </template>
-
-          <template #actions="item">
-            <j-permission-button
-              :type="item.buttonType"
-              :danger="item.key === 'delete'"
-              :disabled="item.disabled"
-              :popConfirm="item.popConfirm"
-              :tooltip="{
-                                    ...item.tooltip,
-                                }"
-              @click="item.onClick"
-              :hasPermission="permissionKey + ':' + item.key"
-            >
-              <AIcon v-if="!item.isPrimary" :type="item.icon" />
-              <span>{{ item?.text }}</span>
-            </j-permission-button>
-          </template>
-        </CardBox>
-      </template>
-	    <template #name="slotProps">
-		    {{ getI18nText(slotProps, 'name') }}
-	    </template>
-	    <template #description="slotProps">
-		    {{ getI18nText(slotProps, 'description') }}
-	    </template>
-      <template #type="slotProps">
-        <span>{{ getPluginTypeLabel(slotProps.type) }}</span>
-      </template>
-      <template #action="slotProps">
-        <a-space :size="16">
-          <template
-            v-for="i in getActions(slotProps,'table')"
-            :key="i.key"
-          >
-            <j-permission-button
-              :disabled="i.disabled"
-              :popConfirm="i.popConfirm"
-              :tooltip="{
-                                    ...i.tooltip,
-                                }"
-              @click="i.onClick"
-              type="link"
-              :danger="i.key === 'delete'"
-              style="padding: 0 5px"
-              :hasPermission="permissionKey + ':' + i.key"
-            >
-              <template #icon
-              >
-                <AIcon :type="i.icon"
-                />
-              </template>
-            </j-permission-button>
-          </template>
-        </a-space>
-      </template>
-    </JProTable>
+  <FullPage class="plugin-list" :padding="16" :style="{ '--plugin-card-row-height': `${list.rowHeight}px` }">
+    <header class="plugin-list__toolbar">
+      <div v-if="$slots.headerLeftRender" class="plugin-list__context"><slot name="headerLeftRender" /></div>
+      <ConditionFilter class="plugin-list__filter" :columns="filterFields" target="link-plugin" @search="list.refresh" />
+      <span class="plugin-list__count">{{ t('pluginRuntime.loaded', { count: list.items.value.length }) }}</span>
+      <a-space :size="8" class="plugin-list__actions">
+        <a-button type="text" size="small" :aria-label="t('pluginRuntime.refresh')" :title="t('pluginRuntime.refresh')" @click="list.refresh()"><AIcon type="ReloadOutlined" /></a-button>
+        <j-permission-button type="primary" :hasPermission="`${permissionKey}:add`" @click="add"><template #icon><AIcon type="PlusOutlined" /></template>{{ t('pluginRuntime.addDriver') }}</j-permission-button>
+      </a-space>
+    </header>
+    <div ref="viewport" class="plugin-list__body">
+      <VirtualScroll v-if="list.items.value.length" ref="scroll" class="plugin-list__scroll" tabindex="0" role="region" :aria-label="t('AccessComponent.listTitle.plugin')" :data="list.rows.value" :item-height="list.rowHeight" :style="{ height: '0px' }" @reach-bottom="list.loadMore">
+        <template #renderItem="{ plugins }">
+          <div class="plugin-list__row" :style="{ gridTemplateColumns: `repeat(${list.columns.value}, minmax(0, 1fr))` }">
+            <PluginCard v-for="plugin in plugins" :key="plugin.id" :data="plugin" :status="statusFor(plugin.id)" :metadata="runtime.descriptions.value[plugin.id]" :loading="runtime.loading.value.has(plugin.id) || !visibleIds.has(plugin.id)" :permission="permissionKey"
+              :type-label="runtime.rows.value.find(node => node.driverId === plugin.id && node.typeName)?.typeName"
+              :actions="actions(plugin)" :inspection-open="inspectionId === plugin.id" :inspection="inspectionId === plugin.id ? inspectionView : undefined" :can-view-logs="diagnostics.logs"
+              @inspect="inspect(plugin.id, $event)" @visibility="setVisible(plugin.id, $event)" @refresh="refreshInspection" @retry="retryNode" @logs="openLogs" />
+          </div>
+        </template>
+      </VirtualScroll>
+      <div v-else-if="list.loading.value" class="plugin-list__skeleton" aria-hidden="true"><CardSummary v-for="n in 6" :key="n" class="plugin-list__placeholder" :data="{ title: '' }" :background-opacity="100" disabled><template #title><a-skeleton-input active size="small" /></template><template #description><a-skeleton active :title="false" :paragraph="{ rows: 2 }" /></template></CardSummary></div>
+      <a-result v-else-if="list.error.value" status="warning" :title="t('pluginRuntime.loadFailed')"><template #extra><a-button @click="list.loadMore">{{ t('pluginRuntime.reloadList') }}</a-button></template></a-result>
+      <CloudEmpty v-else :search="list.query.value.terms" :search-name="t('components.SecondKind.311605-0')">
+        <j-permission-button type="primary" :hasPermission="`${permissionKey}:add`" @click="add">{{ t('plugin.index.293829-0') }}</j-permission-button>
+      </CloudEmpty>
+      <div v-if="list.items.value.length" class="plugin-list__tail">
+        <template v-if="list.error.value">{{ t('pluginRuntime.loadFailed') }} <a-button type="link" @click="list.loadMore">{{ t('pluginRuntime.reloadList') }}</a-button></template>
+        <template v-else-if="list.loading.value"><a-spin size="small" />{{ t('pluginRuntime.loadingMore') }}</template>
+        <a-button v-else-if="list.more.value" type="link" @click="list.loadMore">{{ t('pluginRuntime.loadMore') }}</a-button>
+        <template v-else>{{ t('pluginRuntime.listEnd') }}</template>
+      </div>
+    </div>
   </FullPage>
-  <SaveModal v-if="visible" :data="editData" @cancel="cancel" @ok="save"/>
-  <Detail v-if="visibleDetail" :data="editData" @close="visibleDetail = false"/>
+  <SaveModal v-if="visible" :data="editData || {}" @cancel="visible = false" @ok="save" />
 </template>
 <script setup lang="ts">
-import { createReusableTemplate } from '@vueuse/core'
-
-import SaveModal from './Save.vue';
-import {onlyMessage} from '@jetlinks-web/utils';
-import {queryPage, removeFn, getTypes} from '../../../api/link/plugin';
-import {getPluginTypeLabel} from './util';
-import {link} from '../../../assets'
-import {useI18n} from 'vue-i18n';
-import Detail from './Detail.vue';
-import { usePluginPermission } from '@device-manager-ui/hooks/usePermission'
-import { mergeObjectArrays } from '@jetlinks-web-core/utils'
+import { computed, inject, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
-import { getI18nText } from '../../../utils/i18n'
+import VirtualScroll from '@jetlinks-web-core/components/VirtualScroll/index.vue'
+import { CardSummary } from '@jetlinks-web-core/components/CardBox'
+import { getTypes } from '../../../api/link/plugin'
+import { usePluginPermission } from '../../../hooks/usePermission'
+import { usePluginRuntime } from './usePluginRuntime'
+import { usePluginList } from './usePluginList'
+import { usePluginActions } from './usePluginActions'
+import { pluginAvailability } from './runtimeState'
+import type { PluginRuntimeInfo } from '../../../api/link/pluginRuntime'
+import { useDiagnosticsAccess } from '../diagnostics/useDiagnosticsAccess'
+import PluginCard from './PluginCard.vue'
+import SaveModal from './Save.vue'
 
 defineOptions({ name: 'PluginContent' })
-
-const {t: $t} = useI18n();
-const route = useRoute();
-const visible = ref(false);
-const params = ref<any>();
-const editData = ref();
-const instanceRef = ref();
-const visibleDetail = ref(false);
+const { t } = useI18n(), route = useRoute()
+const router = useRouter(), diagnostics = useDiagnosticsAccess()
 const permissionKey = usePluginPermission()
-
-const columns = [
-  {
-    title: $t('plugin.index.293829-1'),
-    dataIndex: 'id',
-    key: 'id',
-    ellipsis: true,
-    search: {
-      type: 'string',
-    },
-  },
-  {
-    title: $t('plugin.index.293829-3'),
-    dataIndex: 'name',
-    key: 'name',
-    ellipsis: true,
-    search: {
-      type: 'string',
-    },
-	  scopedSlots: true
-  },
-  {
-    title: $t('plugin.index.293829-4'),
-    dataIndex: 'version',
-    key: 'version',
-    ellipsis: true,
-  },
-  {
-    title: $t('plugin.index.293829-2'),
-    dataIndex: 'type',
-    key: 'type',
-    ellipsis: true,
-    scopedSlots: true,
-    search: {
-      type: 'select',
-      options: () => {
-        return new Promise((resolve) => {
-          getTypes().then((res) => {
-            resolve(
-              res.result?.map((item) => ({
-                ...item,
-                label: item.text,
-              })),
-            );
-          });
-        });
-      },
-    },
-  },
-  {
-    title: $t('plugin.index.293829-5'),
-    dataIndex: 'filename',
-    key: 'filename',
-    ellipsis: true,
-  },
-  {
-    title: $t('plugin.index.293829-6'),
-    dataIndex: 'description',
-    key: 'description',
-    ellipsis: true,
-    search: {
-      type: 'string',
-    },
-	  scopedSlots: true
-  },
-  {
-    title: $t('plugin.index.293829-7'),
-    key: 'action',
-    width: 160,
-    scopedSlots: true,
-  },
-];
-
-const handleAdd = () => {
-  editData.value = {};
-  visible.value = true;
-};
-
-const handleSearch = (p: any) => {
-  params.value = p;
-};
-
-const save = () => {
-  if (instanceRef.value) {
-    instanceRef.value?.reload();
-  }
-  visible.value = false;
-};
-
-const cancel = () => {
-  visible.value = false;
-  editData.value = undefined;
-};
-
-const viewDetail = (data: any) => {
-  visibleDetail.value = true;
-  editData.value = data;
+const list = usePluginList()
+const { viewport, scroll } = list
+const { visible, editData, add, save, actions } = usePluginActions(() => list.refresh())
+const visibleIds = ref(new Set<string>())
+const inspectionId = ref<string>()
+function inspect(id: string, open: boolean) {
+  if (open) inspectionId.value = id
+  else if (inspectionId.value === id) inspectionId.value = undefined
 }
-
-const getActions = (data: any,type :string) => {
-  if (!data) {
-    return [];
-  }
-
-  const parentGetActions = inject('getActions', {}).getActions;
-
-  const parentActions = parentGetActions?.(data) || []
-
-  let actions =  [
-    {
-      key: 'update',
-      text: $t('plugin.index.293829-8'),
-      tooltip: {
-        title: (data?.configuration?.sourceId || data?.configuration?.autoCreate) ? $t('plugin.index.293829-14', [$t('plugin.index.293829-8')]) : $t('plugin.index.293829-8'),
-      },
-      disabled: data?.configuration?.sourceId || data?.configuration?.autoCreate,
-      icon: 'EditOutlined',
-      onClick: () => {
-        visible.value = true;
-        editData.value = data;
-      },
-    }, {
-      key: 'view',
-      text: $t('plugin.index.293829-13'),
-      tooltip: {
-        title: $t('plugin.index.293829-13'),
-      },
-      icon: 'EyeOutlined',
-      onClick: () => {
-        viewDetail(data);
-      },
-    },
-    {
-      key: 'delete',
-      text: $t('plugin.index.293829-9'),
-      tooltip: {
-        title: (data?.configuration?.sourceId || data?.configuration?.autoCreate) ? $t('plugin.index.293829-14', [$t('plugin.index.293829-9')]) : $t('plugin.index.293829-9'),
-      },
-      disabled: data?.configuration?.sourceId || data?.configuration?.autoCreate,
-      popConfirm: {
-        title: $t('plugin.index.293829-10'),
-        onConfirm: () => {
-          const response = removeFn(data.id);
-          response.then((resp) => {
-            if (resp.status === 200) {
-              onlyMessage($t('plugin.index.293829-11'));
-              instanceRef.value?.reload();
-            } else {
-              onlyMessage(resp?.message || $t('plugin.index.293829-12'), 'error');
-            }
-          });
-          return response;
-        },
-      },
-      icon: 'DeleteOutlined',
-    },
-  ];
-
-  if (parentActions && parentActions.length > 0) {
-    actions = mergeObjectArrays(actions, parentActions);
-  }
-
-  if (type === 'card')
-    return actions.filter((i: any) => i.key !== 'view');
-  return actions;
-};
-
-onMounted(() => {
-  if (route.query.save) {
-    visible.value = true;
-  }
-
-  const parentTableRef = inject('tableRef')
-  parentTableRef?.initTableRef?.(instanceRef.value)
-});
-
-const [DefineEmptyCreate, EmptyCreateButton] = createReusableTemplate()
+function setVisible(id: string, value: boolean) {
+  const next = new Set(visibleIds.value)
+  if (value) next.add(id); else next.delete(id)
+  visibleIds.value = next
+  if (!value) inspect(id, false)
+}
+const demand = computed(() => {
+  if (!list.enabled.value) return []
+  return list.items.value.filter(driver => visibleIds.value.has(driver.id))
+})
+const runtime = usePluginRuntime(() => demand.value)
+const inspection = usePluginRuntime(() => demand.value.filter(driver => driver.id === inspectionId.value), true)
+const inspectionView = computed(() => ({
+  nodes: runtime.rows.value.filter(node => node.driverId === inspectionId.value),
+  instances: inspection.rows.value,
+  nodeError: runtime.error.value,
+  instanceError: inspection.error.value,
+  pending: inspection.pending.value,
+  limitReached: inspection.limitReached.value,
+  busy: inspection.busy.value,
+}))
+function refreshInspection() { runtime.refresh(); inspection.refresh() }
+async function retryNode(node: PluginRuntimeInfo) { await inspection.retry(node.driverId, node); runtime.refresh() }
+function openLogs(serverId: string) {
+  inspectionId.value = undefined
+  void router.push({ path: '/infrastructure/runtime-monitor', query: { view: 'cluster', nodeId: serverId, tool: 'logs' } })
+}
+const statusFor = (id: string) => runtime.status.value[id] || pluginAvailability([])
+const filterFields = [
+  { title: t('plugin.index.293829-1'), dataIndex: 'id', search: { type: 'string' } },
+  { title: t('plugin.index.293829-3'), dataIndex: 'name', search: { type: 'string' } },
+  { title: t('plugin.index.293829-2'), dataIndex: 'type', search: { type: 'select', options: async () => {
+    const response = await getTypes()
+    return response.result?.map((item: { text: string; id: string }) => ({ ...item, label: item.text })) || []
+  } } },
+  { title: t('plugin.index.293829-6'), dataIndex: 'description', search: { type: 'string' } },
+]
+const parentTable = inject<{ initTableRef?: (table: { reload: () => void }) => void }>('tableRef', {})
+onMounted(() => { list.refresh(); parentTable.initTableRef?.({ reload: () => list.refresh() }); if (route.query.save) add() })
 </script>
-
-<style scoped lang="less">
-.plugin-version {
-  border-radius: 4px;
-}
-
-.access-component-list-toolbar {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-}
-
-.access-component-list-title {
-  margin: 0;
-  color: rgba(0, 0, 0, 0.85);
-  font-size: var(--fs-18);
-  font-weight: 600;
-  line-height: 32px;
-  white-space: nowrap;
-}
-
-.access-component-list-search {
-  flex: 1 1 360px;
-  min-width: 25rem;
-  max-width: 40rem;
-}
+<style scoped>
+.plugin-list { display:flex; flex-direction:column; gap:var(--space-3); min-height:0; min-width:0; overflow:hidden; }
+.plugin-list__toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-3); min-height:32px; }
+.plugin-list__context { display:flex; align-items:center; gap:var(--space-3); }
+.plugin-list__filter { flex:1; min-width:min(240px,100%); }
+.plugin-list__actions { flex:none; }
+.plugin-list__count { margin-inline-start:auto; color:var(--ink-3); font-size:var(--fs-12,12px); white-space:nowrap; }
+.plugin-list__body { flex:1; min-height:0; min-width:0; display:flex; flex-direction:column; }
+.plugin-list__scroll { flex:1; min-height:0; scrollbar-gutter:stable; }
+.plugin-list__row { display:grid; gap:var(--space-4); padding-bottom:var(--space-4); }
+.plugin-list__skeleton { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr)); gap:var(--space-4); }
+.plugin-list__placeholder { --panel-radius:var(--r-2,6px); height:calc(var(--plugin-card-row-height) - 16px); border-color:var(--line); }
+.plugin-list__tail { display:flex; align-items:center; justify-content:center; gap:var(--space-2); min-height:32px; color:var(--ink-3); font-size:var(--fs-12,12px); }
 </style>

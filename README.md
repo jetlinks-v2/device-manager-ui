@@ -31,3 +31,7 @@
 验证：使用实际页面脚本与 Vue 响应式运行时控制响应顺序，资源先返回、详情先返回、类型切换与资源刷新、空资源、独立配置和新增页类型回填共 6 项检查通过，并在 `origin/2.20` 基线复现资源先返回时端口选项为空。三个修改组件的 Vue 脚本、TypeScript 语法、模板编译及差异空白检查通过。既有浏览器人工验证记录覆盖 `view=false` 与 `view=true` 两个入口的真实端口选项和已有端口回显。根项目与本模块未配置独立 lint 脚本。
 
 全量验证：在 `runtime-ui/jetlinks-web-core/` 执行 `pnpm exec vite build --outDir /tmp/jetlinks-network-port-build -- --module-name device-manager-ui`，模块构建通过（11,620 个模块，56.50 秒），仍有资源路径、CSS 注释与大 chunk 警告。在 `runtime-ui/` 执行 `pnpm exec vue-tsc --noEmit --pretty false -p modules/device-manager-ui/tsconfig.json`，当前与 `origin/2.20` 基线均有 1,825 条诊断；映射改动行号后，诊断位置、错误码和末级原因无新增或减少。描述列新增 `ellipsis` 使一条既有 TS2322 的类型展开文本变化，末级原因仍为操作列 `dataIndex` 可为 `undefined`。全量类型检查仍未通过。
+
+## 插件安装与运行观测
+
+`views/link/plugin/` 使用公共卡片和 `VirtualScroll`，按 `createTime / id` 游标分段读取插件驱动配置。卡片顶部为用户设置的名称，辅助行标注驱动类型；中间显示包内定义的驱动名称和说明，名称单行、说明最多两行，全文可悬停查看。包内信息随原摘要流的 `driverName / driverDescription` 获取，仅选择同一当前修订、仍有效的已加载节点，加载时使用局部骨架，包内名称或说明缺失时直接省略对应内容，不逐卡补查详情，也不使用用户录入的说明冒充包内信息。只对可见驱动共享采样；底栏在首份采样返回前按驱动展示骨架屏，后台刷新保留已有状态，读取失败结束加载并显示未知。整个底栏状态区域（含图标、文字与节点数）hover / focus 展示生效节点、运行插件预览及当前问题，点击和键盘也可进入；浮层打开时按需读取实例、关闭即取消，不使用详情抽屉。更多操作菜单沿用紧凑权限按钮，保留原确认与禁用语义；菜单与状态浮层互斥显示。驱动是否可用按当前修订的真实宿主生效结果判断，不适用节点不计为故障；节点重试和已有日志入口仍由实际 owner 控制权限。完整接口、宿主与部署边界见 workspace 的 `modules/jetlinks-components/plugin-component/docs/plugin-runtime-management.md`。
