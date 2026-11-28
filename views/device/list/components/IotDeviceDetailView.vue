@@ -10,17 +10,19 @@
 	<IotDeviceDetailOverlays v-if="!embedded" :state="state" />
 	<main v-if="!embedded && device" class="iot-device-detail">
 		<div class="iot-device-detail__content">
-			<PageChrome :flush="!detailContent">
-				<ContentPanel class="iot-device-detail__summary-card" fill>
+				<div class="iot-device-detail__summary-card">
 					<IotDeviceDetailHeader :state="state" />
-				</ContentPanel>
+				</div>
 				<SlantedTabs
+					flush
+					size="small"
+					class="iot-device-detail__tabs"
 					v-if="!detailContent"
 					:active-key="state.activeTab"
 					:options="state.tabOptions"
 					@change="state.setActiveTab(String($event))"
-				/>
-			</PageChrome>
+				>
+                </SlantedTabs>
 			
 			<div class="iot-device-detail__content-card" :padding="0">
 				<FullPage v-if="detailContent" class="iot-device-detail__legacy-content" flex transparent-background>

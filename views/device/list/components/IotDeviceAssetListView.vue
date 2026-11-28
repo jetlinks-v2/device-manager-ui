@@ -20,12 +20,16 @@
           :group-device-counts="groupDeviceCounts"
           :unbound-area-device-count="unboundAreaDeviceCount"
           :unassigned-group-device-count="unassignedGroupDeviceCount"
+          :bound-area-device-count="boundAreaDeviceCount"
+          :assigned-group-device-count="assignedGroupDeviceCount"
           :show-area="spaceAreaSupported !== false"
+          :action-busy="groupMoving || groupSaving"
           @change="handleScopeChange"
           @create-group="openCreateGroup"
           @create-child-group="openCreateChildGroup"
           @edit-group="openEditGroup"
           @delete-group="confirmDeleteGroup"
+          @move-group="moveGroup"
         />
       </template>
       <template #right>
@@ -106,7 +110,10 @@
   <IotDeviceGroupNameModal
     v-model:open="groupDialogOpen"
     :mode="groupDialogMode"
-    :initial-name="groupEditing?.name"
+    :initial-name="groupDialogMode === 'edit' ? groupEditing?.name : undefined"
+    :initial-parent-id="groupDialogMode === 'createChild' ? groupEditing?.id : groupEditing?.parentId"
+    :editing-id="groupDialogMode === 'edit' ? groupEditing?.id : undefined"
+    :groups="groupOptions"
     :saving="groupSaving"
     :error="groupDialogError"
     @save="saveGroup"
@@ -187,6 +194,8 @@ const {
   groupDeviceCounts,
   unboundAreaDeviceCount,
   unassignedGroupDeviceCount,
+  boundAreaDeviceCount,
+  assignedGroupDeviceCount,
 } = useIotDeviceScopeCounts(
   projectId, areaOptions, groupOptions, refreshKey, undefined, spaceAreaSupported,
 )
@@ -198,6 +207,8 @@ const {
   groupDialogOpen,
   groupEditing,
   groupSaving,
+  groupMoving,
+  moveGroup,
   openCreateChildGroup,
   openCreateGroup,
   openEditGroup,
@@ -206,6 +217,7 @@ const {
   getActiveScope: () => ({ type: scopeType.value, id: scopeId.value }),
   reloadGroups,
   changeScope,
+  getGroups: () => groupOptions.value,
 })
 
 const {

@@ -10,7 +10,7 @@ test('video tab visibility follows the deployment type', () => {
   assert.match(providerContract, /showInTabs\?: boolean/)
   assert.match(videoProvider, /import \{ isPrivateDeployment \} from '@jetlinks-web-core\/utils\/deployment'/)
   assert.match(videoProvider, /id: 'video'[\s\S]*?showInTabs: isPrivateDeployment\(\)/)
-  assert.match(listSource, /const tabs = computed<SlantedTabOption\[]>\(\(\) => \[[\s\S]*?provider\.showInTabs !== false/)
+  assert.match(listSource, /const tabs = computed\(\(\) => \[[\s\S]*?provider\.showInTabs !== false/)
 })
 
 test('hidden providers still serve category links and classify devices', () => {

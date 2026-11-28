@@ -2,7 +2,7 @@ import { ref, watch, type Ref } from 'vue'
 import { countDevice_api, type DeviceQueryTerm } from '@device-manager-ui/api/device'
 import { batchDeviceNodeSummary_api, type DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
-import { IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './useIotDeviceAssetFilters'
+import { buildDeviceScopeTerms, IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID, IOT_ALL_BOUND_AREAS_SCOPE_ID, IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './iotDeviceScopeTerms'
 
 type ScopeCounts = Record<string, number>
 const areaScopeKey = (areaId: string) => `area:${areaId}`
@@ -49,15 +49,28 @@ export function useIotDeviceScopeCounts(
   const groupDeviceCounts = ref<ScopeCounts>({})
   const unboundAreaDeviceCount = ref(0)
   const unassignedGroupDeviceCount = ref(0)
+  const boundAreaDeviceCount = ref(0)
+  const assignedGroupDeviceCount = ref(0)
+  const loading = ref(false), error = ref(false)
   let requestVersion = 0
 
   async function refreshScopeCounts() {
     const version = ++requestVersion
+    loading.value = true; error.value = false
+    let failed = false
     const areaScopeIds = buildAreaScopeIds(areas.value)
     const groupIds = groups.value.map((group) => group.id).filter(Boolean)
     const [total, scopeSummaries] = await Promise.all([
-      countDevice_api({}, baseTerms.value).catch(() => 0),
+      countDevice_api({}, baseTerms.value).catch(() => { failed = true; return 0 }),
       batchDeviceNodeSummary_api([
+        ...(spaceAreaSupported.value === true ? [{
+          id: IOT_ALL_BOUND_AREAS_SCOPE_ID,
+          query: { terms: buildDeviceScopeTerms('area', IOT_ALL_BOUND_AREAS_SCOPE_ID, groupIds) },
+        }] : []),
+        {
+          id: IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID,
+          query: { terms: buildDeviceScopeTerms('group', IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID, groupIds) },
+        },
         ...(spaceAreaSupported.value === true ? areas.value.map((area) => {
           const scopeIds = areaScopeIds[area.id] ?? [area.id]
           return {
@@ -80,25 +93,21 @@ export function useIotDeviceScopeCounts(
         ...(spaceAreaSupported.value === true ? [{
           id: IOT_UNBOUND_AREA_SCOPE_ID,
           query: {
-            // 不可按当前可见空间 ID 推导未绑定设备，否则无空间权限时会命中全部设备。
-            terms: [{
-              column: 'id',
-              termType: 'space-bind$any$not',
-              value: '__any_space_binding__',
-            }],
+            terms: buildDeviceScopeTerms('area', IOT_UNBOUND_AREA_SCOPE_ID, groupIds),
           },
         }] : []),
         {
           id: IOT_UNASSIGNED_GROUP_SCOPE_ID,
           query: {
-            terms: groupIds.length ? [{ column: 'id', termType: 'dev-group$not', value: groupIds }] : [],
+            terms: buildDeviceScopeTerms('group', IOT_UNASSIGNED_GROUP_SCOPE_ID, groupIds),
           },
         },
-      ], baseTerms.value).catch(() => []),
+      ], baseTerms.value).catch(() => { failed = true; return [] }),
     ])
 
     // 设备写操作与范围切换可能并发触发统计刷新，只保留最新结果。
     if (version !== requestVersion) return
+    loading.value = false; error.value = failed
 
     totalDeviceCount.value = Math.max(0, Number(total) || 0)
     const scopeCountMap = Object.fromEntries(scopeSummaries.map((scope) => [scope.id, scope.deviceCount]))
@@ -106,26 +115,34 @@ export function useIotDeviceScopeCounts(
     groupDeviceCounts.value = Object.fromEntries(groups.value.map((group) => [group.id, scopeCountMap[group.id] ?? 0]))
     unboundAreaDeviceCount.value = scopeCountMap[IOT_UNBOUND_AREA_SCOPE_ID] ?? 0
     unassignedGroupDeviceCount.value = scopeCountMap[IOT_UNASSIGNED_GROUP_SCOPE_ID] ?? 0
+    boundAreaDeviceCount.value = scopeCountMap[IOT_ALL_BOUND_AREAS_SCOPE_ID] ?? 0
+    assignedGroupDeviceCount.value = scopeCountMap[IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID] ?? 0
   }
 
   watch([projectId, areas, groups, refreshKey, baseTerms, spaceAreaSupported], ([nextProjectId]) => {
     if (!nextProjectId) {
+      requestVersion++; loading.value = false; error.value = false
       totalDeviceCount.value = 0
       areaDeviceCounts.value = {}
       groupDeviceCounts.value = {}
       unboundAreaDeviceCount.value = 0
       unassignedGroupDeviceCount.value = 0
+      boundAreaDeviceCount.value = 0
+      assignedGroupDeviceCount.value = 0
       return
     }
     void refreshScopeCounts()
   }, { immediate: true })
 
   return {
+    loading, error,
     totalDeviceCount,
     areaDeviceCounts,
     groupDeviceCounts,
     unboundAreaDeviceCount,
     unassignedGroupDeviceCount,
+    boundAreaDeviceCount,
+    assignedGroupDeviceCount,
     refreshScopeCounts,
   }
 }

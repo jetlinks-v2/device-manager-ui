@@ -1,0 +1,4 @@
+{
+  "extends":"./tsconfig.json",
+  "include":["./components/device-detail/DeviceConnectionContext.vue","./components/device-detail/useDeviceConnectionContext.ts","./views/device/list/components/device-detail/IotDeviceDetailHeader.vue","../../jetlinks-web-core/src/auto-imports.d.ts","../../jetlinks-web-core/src/env.d.ts"]
+}

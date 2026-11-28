@@ -4,13 +4,15 @@
     :class="{ 'iot-tree-node-row--with-action': props.showAction || props.reserveActionSpace }"
   >
     <span class="iot-tree-node-row__content">
-      <span class="iot-tree-node-row__icon"><slot name="icon" /></span>
+      <span v-if="$slots.icon" class="iot-tree-node-row__icon"><slot name="icon" /></span>
       <span class="iot-tree-node-row__label">
         <j-ellipsis class="iot-tree-node-row__ellipsis"><slot name="label" /></j-ellipsis>
       </span>
     </span>
     <span class="iot-tree-node-row__count">
-      <a-tooltip v-if="props.countTooltip" :title="props.countTooltip">
+      <SkeletonText v-if="props.countLoading" :width="20" />
+      <AIcon v-else-if="props.countError" type="ExclamationCircleOutlined" />
+      <a-tooltip v-else-if="props.countTooltip" :title="props.countTooltip">
         <span class="iot-tree-node-row__count-value">{{ props.count }}</span>
       </a-tooltip>
       <span v-else>{{ props.count }}</span>
@@ -35,9 +37,12 @@
 </template>
 
 <script setup lang="ts">
+import SkeletonText from '@jetlinks-web-core/components/SkeletonText'
 interface IotTreeNodeRowProps {
   count?: string | number
   countTooltip?: string
+  countLoading?: boolean
+  countError?: boolean
   showAction?: boolean
   reserveActionSpace?: boolean
   actionAriaLabel?: string
@@ -108,7 +113,7 @@ const props = withDefaults(defineProps<IotTreeNodeRowProps>(), {
 }
 
 .iot-tree-node-row__count {
-  color: var(--jet-theme-text-disabled);
+  color: var(--jet-theme-text-secondary);
   font-size: var(--fs-14);
   font-style: normal;
   text-align: right;
@@ -147,5 +152,9 @@ const props = withDefaults(defineProps<IotTreeNodeRowProps>(), {
 .iot-tree-node-row:hover .iot-tree-node-row__action-button,
 .iot-tree-node-row:focus-within .iot-tree-node-row__action-button {
   opacity: 1;
+}
+
+@media (hover: none) {
+  .iot-tree-node-row__action-button { opacity: 1; }
 }
 </style>

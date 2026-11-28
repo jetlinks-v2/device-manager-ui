@@ -1,13 +1,9 @@
-import { computed, ref, watch } from 'vue'
+import { computed, reactive } from 'vue'
 import type { TreeProps } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
-import { cloneDeep } from 'lodash-es'
-import { filterTreeNodes } from '@jetlinks-web/utils'
 import type { DeviceGroup } from '@device-manager-ui/api/deviceGroup'
 import { buildDeviceGroupTreeData, type DeviceGroupTreeNode } from './iotDeviceGroupTreeOptions'
-import { IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './useIotDeviceAssetFilters'
-
-const IOT_ALL_DEVICE_SCOPE_ID = '__iot-all-devices__'
+import { IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID, IOT_ALL_BOUND_AREAS_SCOPE_ID, IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_UNBOUND_AREA_SCOPE_ID } from './iotDeviceScopeTerms'
 
 type Area = { id: string; name: string; parentId?: string }
 type Scope = { type: 'area' | 'group'; id: string }
@@ -16,6 +12,8 @@ export interface IotDeviceScopeSidebarProps {
   // 仅消费范围筛选的页面可关闭管理入口；设备页默认保留分组操作。
   showGroupActions?: boolean
   showArea?: boolean
+  loading?: boolean
+  loadError?: boolean
   activeType: Scope['type']
   activeId: string
   areas: Area[]
@@ -25,14 +23,15 @@ export interface IotDeviceScopeSidebarProps {
   groupDeviceCounts: Record<string, number>
   unboundAreaDeviceCount: number
   unassignedGroupDeviceCount: number
+  boundAreaDeviceCount?: number
+  assignedGroupDeviceCount?: number
 }
 
 type ScopeTreeNode = {
   key: string
   title: string
   count?: number
-  icon: string
-  isScope?: boolean
+  isRoot?: boolean
   group?: DeviceGroup
   children?: ScopeTreeNode[]
 }
@@ -48,12 +47,9 @@ export function useIotDeviceScopeSidebar(
     set: (type: Scope['type']) => onChange({ type, id: '' }),
   })
   const scopeId = computed(() => props.activeId)
-  const searchKeyword = ref('')
   const searchPlaceholder = computed(() => t(scopeType.value === 'area'
     ? 'IotDeviceList.scope.searchArea'
     : 'IotDeviceList.scope.searchGroup'))
-  // 切换空间 / 分组时清空局部搜索，避免新范围树被上一范围的关键词隐藏。
-  watch(scopeType, () => { searchKeyword.value = '' })
   // 不设置 label 字段，分段器才会把这部分交给 #label 插槽渲染（图标 + 文案）。
   const scopeOptions = computed(() => [
     ...(props.showArea === false ? [] : [{
@@ -68,7 +64,9 @@ export function useIotDeviceScopeSidebar(
 
   const areaTree = computed<ScopeTreeNode[]>(() => {
     const byParent = new Map<string, Area[]>()
+    const ids = new Set(props.areas.map(area => area.id))
     props.areas.forEach((area) => {
+      if (area.parentId === area.id) return
       const parentId = area.parentId || ''
       byParent.set(parentId, [...(byParent.get(parentId) ?? []), area])
     })
@@ -76,65 +74,63 @@ export function useIotDeviceScopeSidebar(
       key: area.id,
       title: area.name,
       count: props.areaDeviceCounts[area.id],
-      icon: 'icon-dizhi',
       children: (byParent.get(area.id) ?? []).map(toNode),
     })
-    return (byParent.get('') ?? []).map(toNode)
+    return props.areas.filter(area => !area.parentId || area.parentId === area.id || !ids.has(area.parentId)).map(toNode)
   })
   const groupTree = computed<ScopeTreeNode[]>(() => {
     const withCount = (node: DeviceGroupTreeNode): ScopeTreeNode => ({
       ...node,
       count: props.groupDeviceCounts[node.key],
-      icon: 'icon-zuzhi',
       children: node.children?.map(withCount),
     })
     return buildDeviceGroupTreeData(props.groups).map(withCount)
   })
 
-  // 固定范围始终排在树顶，并通过虚拟 key 映射回既有的空 scopeId 筛选语义。
-  const treeData = computed<ScopeTreeNode[]>(() => scopeType.value === 'area'
+  const quickScopes = computed(() => scopeType.value === 'area'
     ? [{
-      key: IOT_ALL_DEVICE_SCOPE_ID,
+      key: '',
       title: t('IotDeviceList.scope.allAreas'),
       count: props.totalDeviceCount,
-      icon: 'icon-quanbu',
-      isScope: true,
+      icon: 'AppstoreOutlined',
     }, {
       key: IOT_UNBOUND_AREA_SCOPE_ID,
       title: t('IotDeviceList.scope.unboundArea'),
       count: props.unboundAreaDeviceCount,
-      icon: 'icon-shujiedian-weifenlei',
-      isScope: true,
-    }, ...areaTree.value]
+      icon: 'DisconnectOutlined',
+    }]
     : [{
-      key: IOT_ALL_DEVICE_SCOPE_ID,
+      key: '',
       title: t('IotDeviceList.scope.allGroups'),
       count: props.totalDeviceCount,
-      icon: 'icon-quanbu',
-      isScope: true,
+      icon: 'AppstoreOutlined',
     }, {
       key: IOT_UNASSIGNED_GROUP_SCOPE_ID,
       title: t('IotDeviceList.scope.unassignedGroup'),
       count: props.unassignedGroupDeviceCount,
-      icon: 'icon-shujiedian-weifenlei',
-      isScope: true,
-    }, ...groupTree.value])
-  const normalizedKeyword = computed(() => searchKeyword.value.trim())
-  // 公共过滤工具会修改 children；复制后筛选并保留祖先，清空时仍可恢复完整树。
-  const filteredTreeData = computed<ScopeTreeNode[]>(() => normalizedKeyword.value
-    ? filterTreeNodes(cloneDeep(treeData.value), normalizedKeyword.value, 'title')
-    : treeData.value)
-  // 搜索词变化时重建树并展开匹配路径，避免深层结果仍藏在折叠节点下。
-  const treeKey = computed(() => `${scopeType.value}:${normalizedKeyword.value}`)
-  const expandAll = computed(() => scopeType.value === 'area' || !!normalizedKeyword.value)
-  const selectedKeys = computed(() => [scopeId.value || IOT_ALL_DEVICE_SCOPE_ID])
+      icon: 'FolderOpenOutlined',
+    }])
+  const rootId = computed(() => scopeType.value === 'area' ? IOT_ALL_BOUND_AREAS_SCOPE_ID : IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID)
+  const treeNodes = computed(() => scopeType.value === 'area' ? areaTree.value : groupTree.value)
+  const hasData = computed(() => treeNodes.value.length > 0)
+  const treeData = computed<ScopeTreeNode[]>(() => hasData.value ? [{
+    key: rootId.value,
+    title: t(scopeType.value === 'area' ? 'IotDeviceList.scope.rootAreas' : 'IotDeviceList.scope.rootGroups'),
+    count: scopeType.value === 'area' ? props.boundAreaDeviceCount : props.assignedGroupDeviceCount,
+    isRoot: true,
+    children: treeNodes.value,
+  }] : [])
+  // 首次展开由公共组件生成；此处仅保留两个业务范围各自的用户偏好。
+  const expandedByType = reactive<Partial<Record<Scope['type'], string[]>>>({})
+  const expandedKeys = computed(() => expandedByType[scopeType.value])
+  const onExpand = (keys: NonNullable<TreeProps['expandedKeys']>) => { expandedByType[scopeType.value] = keys.map(String) }
+  const selectedKeys = computed(() => scopeId.value ? [scopeId.value] : [])
+  const chooseScope = (id: string) => onChange({ type: scopeType.value, id })
 
   const onSelect: TreeProps['onSelect'] = (keys) => {
-    const key = String(keys[0] || IOT_ALL_DEVICE_SCOPE_ID)
-    onChange({ type: scopeType.value, id: key === IOT_ALL_DEVICE_SCOPE_ID ? '' : key })
+    chooseScope(String(keys[0] || ''))
   }
-  // 树节点只展示数字，避免单位占用名称列；列表和统计卡仍保留各自的业务单位。
   const countValue = (value?: number) => Math.max(0, Number(value) || 0)
 
-  return { scopeType, scopeOptions, searchKeyword, searchPlaceholder, filteredTreeData, treeKey, expandAll, selectedKeys, onSelect, countValue }
+  return { scopeType, scopeOptions, searchPlaceholder, rootId, hasData, quickScopes, treeData, expandedKeys, onExpand, selectedKeys, chooseScope, onSelect, countValue }
 }

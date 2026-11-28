@@ -1,6 +1,6 @@
 import { computed, ref, type ComputedRef, type Ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
+import type { LocationQueryRaw, RouteLocationNormalizedLoaded, Router } from 'vue-router'
 import {
   buildQueryFilter,
   decodeConditionFilterQuery,
@@ -19,14 +19,13 @@ import {
 } from '@device-manager-ui/api/spaceArea'
 import type { ProjectArea } from '@device-manager-ui/modules/defaults/types'
 import { mergeDeviceBoundAreas } from './iotAreaTreeOptions'
+import { buildDeviceScopeTerms } from './iotDeviceScopeTerms'
 
 import type { IotDevice, IotDeviceConnectionStatus } from '../types'
 
 type ConnectionStatusMeta = (status: IotDeviceConnectionStatus) => { label: string }
 
-export const IOT_UNBOUND_AREA_SCOPE_ID = '__iot-unbound-area__'
-export const IOT_UNASSIGNED_GROUP_SCOPE_ID = '__iot-unassigned-group__'
-const ANY_SPACE_BINDING_VALUE = '__any_space_binding__'
+export { IOT_UNBOUND_AREA_SCOPE_ID, IOT_UNASSIGNED_GROUP_SCOPE_ID } from './iotDeviceScopeTerms'
 
 export function cloneConditionTerms(terms: ConditionFilterTerm[] = []): ConditionFilterTerm[] {
   return terms.map((item) => ({
@@ -417,23 +416,9 @@ export function useIotDeviceAssetFilters(
     const terms = (filter.terms as DeviceQueryTerm[])
       .map(normalizeDeviceQueryTerm)
       .filter((item): item is DeviceQueryTerm => Boolean(item))
-    if (!scopeId.value) return terms
-    if (scopeType.value === 'area' && spaceAreaSupported.value === true) {
-      if (scopeId.value === IOT_UNBOUND_AREA_SCOPE_ID) {
-        // 不依赖可读取的空间列表；否则无空间权限时会把全部设备误判为未绑定。
-        terms.push({ column: 'id', termType: 'space-bind$any$not', value: ANY_SPACE_BINDING_VALUE })
-        return terms
-      }
-      const ids = collectAreaScopeIds(scopeId.value)
-      if (ids.length) terms.push({ column: 'id', termType: 'space-bind$device', value: ids.length === 1 ? ids[0] : ids })
-    } else if (scopeType.value === 'group') {
-      if (scopeId.value === IOT_UNASSIGNED_GROUP_SCOPE_ID) {
-        const groupIds = groupOptions.value.map((group) => group.id).filter(Boolean)
-        if (groupIds.length) terms.push({ column: 'id', termType: 'dev-group$not', value: groupIds })
-      } else {
-        terms.push({ column: 'id', termType: 'dev-group-tree', value: scopeId.value })
-      }
-    }
+    if (scopeType.value !== 'area' || spaceAreaSupported.value === true) terms.push(...buildDeviceScopeTerms(
+      scopeType.value, scopeId.value, groupOptions.value.map(group => group.id).filter(Boolean), collectAreaScopeIds(scopeId.value),
+    ))
     return terms
   }
 
@@ -441,7 +426,7 @@ export function useIotDeviceAssetFilters(
     if (scope.type === 'area' && spaceAreaSupported.value !== true) return
     scopeType.value = scope.type
     scopeId.value = scope.id
-    const nextQuery = { ...route.query, scopeType: scope.type }
+    const nextQuery: LocationQueryRaw = { ...route.query, scopeType: scope.type }
     if (scope.id) nextQuery.scopeId = scope.id
     else delete nextQuery.scopeId
     void router.replace({ query: nextQuery })
@@ -548,7 +533,7 @@ export function useIotDeviceAssetFilters(
       if (!supported && scopeType.value === 'area') {
         scopeType.value = 'group'
         scopeId.value = ''
-        const nextQuery = { ...route.query, scopeType: 'group' }
+        const nextQuery: LocationQueryRaw = { ...route.query, scopeType: 'group' }
         delete nextQuery.scopeId
         void router.replace({ query: nextQuery })
       }

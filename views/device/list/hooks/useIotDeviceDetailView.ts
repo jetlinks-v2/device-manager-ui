@@ -12,6 +12,8 @@ import {
   undeployDevice_api,
 } from '@device-manager-ui/api/device'
 import { DEVICE_CATEGORY_META } from './useDeviceLibraryMeta'
+import { getObjectTypeIcon } from '@jetlinks-web-core/components/IconValue/objectTypeIcons'
+import { useIotDeviceParentLink } from './useIotDeviceParentLink'
 import { useDeviceLibrary } from './useDeviceLibrary'
 import { useIotDataAccessRefresh } from './useIotDataAccessRefresh'
 import { buildIotDeviceHealthPath, buildIotDeviceListPath, resolveIotProjectId } from './useIotDeviceRouting'
@@ -119,6 +121,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const beginLoad = () => { loadVersion += 1; return currentLoad() }
 
   const device = ref<IotDevice | null>(null)
+  const parentDeviceLink = useIotDeviceParentLink(device)
   const instanceStore = useInstanceStore()
   const provider = useDeviceListProvider(device)
   const detailContent = computed(() => props.embedded ? undefined : provider.value?.detailContent)
@@ -126,6 +129,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const initializing = ref(true)
   const extensionTabs = useDeviceDetailTabs(device)
   const canDeviceAction = useDeviceDetailPermissions(device)
+  const canInlineEditDeviceMetadata = computed(() => canDeviceAction('update') && !provider.value?.editRoute)
   // 物模型编辑与详情头部“编辑”共用同一授权规则，避免物联旧菜单缺少按钮 id 时出现权限分叉。
   const deviceUpdatePermission = computed(() => props.embedded?.updatePermission ?? canDeviceAction('update'))
   const hasTransparentCodec = computed(() =>
@@ -621,7 +625,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   const categoryIcon = computed<string>(() => {
     if (categoryKey.value) return DEVICE_CATEGORY_META[categoryKey.value].icon
-    return 'HddOutlined'
+    return getObjectTypeIcon('device')
   })
 
   function isNumericPoint(point: IotTelemetryPoint): boolean {
@@ -1665,6 +1669,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     setActiveTab,
     setInnerTab,
     openEditDrawer,
+    ...parentDeviceLink,
     openProductDetail,
     backToDeviceList,
     onDeviceSaved,
@@ -1715,6 +1720,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     setPropertyPageRealtimeKeys,
     activeExtension,
     canDeviceAction,
+    canInlineEditDeviceMetadata,
     loadAll,
   }
 }

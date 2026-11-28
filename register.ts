@@ -11,6 +11,7 @@ import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager
 import { usePluginPermissionContext } from '@device-manager-ui/hooks/usePermission'
 import { useInstanceStore } from '@device-manager-ui/store/instance'
 import { useDeviceScope } from './deviceScope'
+import { useDeviceConnectionHeader } from './deviceDetailConnection'
 import { useSystemMonitorOverview } from './visDashboard/SystemMonitor/hooks/useSystemMonitorOverview'
 import { getDeviceListSearchTerms } from './deviceListFilter'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
@@ -102,6 +103,14 @@ export default {
     instancePage: query
   },
   components: {
+    DeviceDetailName: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailName.vue')),
+    DeviceDetailIcon: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailIcon.vue')),
+    DeviceDetailScopeField: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailScopeField.vue')),
+    DeviceDetailConnection: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailConnection.vue')),
+    DeviceConnectionStatus: defineAsyncComponent(() => import('./components/device-detail/DeviceConnectionStatus.vue')),
+    DeviceConnectionMetrics: defineAsyncComponent(() => import('./components/device-detail/DeviceConnectionMetrics.vue')),
+    DeviceConnectionContext: defineAsyncComponent(() => import('./components/device-detail/DeviceConnectionContext.vue')),
+    DeviceDetailTagsHost: defineAsyncComponent(() => import('./views/device/list/components/device-detail/tags/DeviceDetailTagsHost.vue')),
     DeviceDetailActions: defineAsyncComponent(() => import('./views/device/list/components/device-detail/DeviceDetailActions.vue')),
     MetricObjectNavigator: defineAsyncComponent(() => import('./views/device/metrics/navigation/MetricObjectNavigator.vue')),
     ObjectMetrics: defineAsyncComponent(() => import('./views/device/metrics/ObjectMetrics.vue')),
@@ -123,6 +132,7 @@ export default {
     InstanceDetailPage: defineAsyncComponent(() => import('./views/device/Instance/Detail/index.vue')),
   },
   hooks: {
+    useDeviceConnectionHeader,
     useSystemMonitorOverview,
     useMetricSourcePicker: useMetricSourceAdapter,
     useDeviceScope,

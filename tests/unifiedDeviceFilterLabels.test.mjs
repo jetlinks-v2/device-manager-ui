@@ -42,6 +42,7 @@ async function loadList(environment) {
         export const useMenuStore = () => ({hasMenu:()=>true});
         export const moduleRegistry = {getAllModuleIds:()=>[]};
         export const isNoCommunity = true;
+        export const getToken = () => 'test-session';
         export const randomString = () => Math.random().toString(36).slice(2);
         export const resolveIotProjectId = () => 'project';
         export const isIotDeviceListEntry = () => true;

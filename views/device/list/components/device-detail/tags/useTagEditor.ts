@@ -9,6 +9,16 @@ interface TagActions {
   removeTag: (tag: DeviceTag) => Promise<boolean>
 }
 
+export interface DeviceDetailTagsState extends TagActions {
+  $t: (key: string, params?: Record<string, unknown>) => string
+  tagsListRef: HTMLElement | null
+  tagsExpanded: boolean
+  tagsOverflow: boolean
+  canRemoveTag: (tag: DeviceTag) => boolean
+  formatTagTooltipValueOnly: (tag: DeviceTag) => string
+  toggleTagsExpanded: () => void
+}
+
 /** 单项编辑只维护草稿和弹层；持久化及设备切换保护交给详情宿主。 */
 export function useTagEditor(state: () => TagActions) {
   const activeKey = ref('')
