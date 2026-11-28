@@ -9,13 +9,6 @@
       @snooze="onSnoozeTodo"
     />
   
-    <IotAddDeviceDrawer
-      v-model:open="editDrawerOpen"
-      :project-id="projectId"
-      :device="device"
-      @saved="onDeviceSaved"
-    />
-  
     <IotDeviceTagEditorModal
       v-model:open="tagEditorOpen"
       :tags="thingModelTags"
@@ -56,7 +49,6 @@
 <script setup lang="ts">
 import { toRefs, type PropType } from 'vue'
 import JlDrawerShell from '@jetlinks-web-core/components/JlDrawerShell/index.vue'
-import IotAddDeviceDrawer from '../IotAddDeviceDrawer.vue'
 import IotDeviceTagEditorModal from '../IotDeviceTagEditorModal.vue'
 import IotDeviceStatusPill from '../IotDeviceStatusPill.vue'
 import IotTodoHandlerDrawer from '../IotTodoHandlerDrawer.vue'
@@ -66,7 +58,6 @@ import type { IotDeviceDetailViewState } from '../../hooks/useIotDeviceDetailVie
 type ViewState = Pick<IotDeviceDetailViewState,
   '$t' |
   'projectId' |
-  'device' |
   'workbench' |
   'todoHandlerOpen' |
   'handlingTodo' |
@@ -75,8 +66,6 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'activeRuleTodo' |
   'savingTags' |
   'tagEditorOpen' |
-  'editDrawerOpen' |
-  'onDeviceSaved' |
   'thingModelTags' |
   'saveTags' |
   'activeRuleRows' |
@@ -89,7 +78,6 @@ const props = defineProps({ state: { type: Object as PropType<ViewState>, requir
 const {
   $t,
   projectId,
-  device,
   workbench,
   todoHandlerOpen,
   handlingTodo,
@@ -98,8 +86,6 @@ const {
   activeRuleTodo,
   savingTags,
   tagEditorOpen,
-  editDrawerOpen,
-  onDeviceSaved,
   thingModelTags,
   saveTags,
   activeRuleRows,

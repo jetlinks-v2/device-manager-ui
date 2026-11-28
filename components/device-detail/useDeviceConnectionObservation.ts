@@ -52,7 +52,12 @@ export function useDeviceConnectionObservation(props: { deviceId: string; projec
     } finally {
       if (current(epoch, id)) {
         requesting.value = false
-        if (collecting.value) timer = setTimeout(() => { timer = undefined; void load() }, interval.value * 1000)
+        if (collecting.value) {
+          // 首对累计计数以1秒间隔建立速率，随后恢复用户的采样周期。
+          const initialRate = history.value.length === 1 && !!history.value[0].connections?.length
+          const delay = initialRate ? Math.min(interval.value, 1) : interval.value
+          timer = setTimeout(() => { timer = undefined; void load() }, delay * 1000)
+        }
       }
     }
   }

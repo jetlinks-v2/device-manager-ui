@@ -7,6 +7,12 @@ import { createComponentLoader, flush } from '../../../jetlinks-web-core/tests/h
 const header = await readFile(new URL('../views/device/list/components/device-detail/IotDeviceDetailHeader.vue', import.meta.url), 'utf8')
 const state = await readFile(new URL('../views/device/list/hooks/useIotDeviceDetailView.ts', import.meta.url), 'utf8')
 
+test('device fields and descriptions have local editing entries without a summary edit button', () => {
+  assert.match(header, /<DetailMetaItem kind="description"/)
+  assert.match(header, /<DeviceDetailDescription/)
+  assert.doesNotMatch(header, /meta-editable|@edit-meta=/)
+})
+
 test('device detail header copies the device ID and opens the linked product detail', () => {
   assert.match(header, /@copy="copyDeviceId"/)
   assert.match(header, /@click="openProductDetail"/)

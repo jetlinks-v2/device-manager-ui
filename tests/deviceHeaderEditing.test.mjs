@@ -59,6 +59,17 @@ test('name patch preserves other translations and never resubmits unrelated devi
   assert.deepEqual(refreshed, ['device'])
 })
 
+test('name translations replace their own field while description saves patch describe and preserve other fields',async t=>{
+  const {state,calls}=setup(t)
+  await state.saveName('New name',{zh:'新名称',de:'Name'})
+  assert.deepEqual(calls[0][1],{name:'New name',i18nMessages:{name:{zh:'新名称',de:'Name'},description:{ja:'説明'}}})
+  await state.saveDescription('说明',{zh:'说明',en:'Description'})
+  assert.deepEqual(calls[1][1],{describe:'说明',i18nMessages:{name:{zh:'旧名称',en:'Old','en-US':'US name'},description:{zh:'说明',en:'Description'}}})
+  await state.saveDescription('',{})
+  assert.equal(calls[2][1].describe,'')
+  await assert.rejects(state.saveDescription('x'.repeat(201)))
+})
+
 test('icon update and removal only patch photoUrl and encode the device identifier', async t => {
   const { state, props, calls } = setup(t)
   props.deviceId = 'device/with space'

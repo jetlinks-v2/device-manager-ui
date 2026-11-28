@@ -16,7 +16,7 @@ const observations = load('../../../jetlinks-web-core/src/components/RuntimeDiag
 const settle = async () => { await Promise.resolve(); await vue.nextTick(); await Promise.resolve() }
 const session = (read = '100', write = '200') => [{ deviceId: 'a', serverId: 'node', connectTime: 1000, pendingMessages: '0', connections: [{ id: 'socket', address: '127.0.0.1', metrics: { connectTime: 1000, readBytes: read, writeBytes: write, totalMessages: '10' } }] }]
 function fixture(t, query = async () => ({ status: 200, result: session() }), status = 'offline', subject) {
-  const calls = [], timers = new Map(), permission = vue.ref(true), visibility = vue.ref('visible')
+  const calls = [], timers = new Map(), delays = new Map(), permission = vue.ref(true), visibility = vue.ref('visible')
   let now = 10000, timerId = 0, deactivate
   const { useDeviceConnectionObservation } = load('../components/device-detail/useDeviceConnectionObservation.ts', {
     vue: { ...vue, onActivated: () => {}, onDeactivated: fn => { deactivate = fn } },
@@ -26,11 +26,11 @@ function fixture(t, query = async () => ({ status: 200, result: session() }), st
     '@jetlinks-web-core/components/RuntimeDiagnostics': { ...observations, defaultDiagnosticSamplingInterval: 2 },
     '../../api/deviceConnection': { queryDeviceConnectionSessions_api: async id => { calls.push(id); return query(id) } },
     '../../views/device/list/hooks/useIotDeviceRouting': { getIotDeviceListMenuCode: () => 'devices' },
-  }, { setTimeout: fn => { timers.set(++timerId, fn); return timerId }, clearTimeout: id => timers.delete(id), Date: { now: () => now } })
+  }, { setTimeout: (fn, delay) => { timers.set(++timerId, fn); delays.set(timerId, delay); return timerId }, clearTimeout: id => { timers.delete(id); delays.delete(id) }, Date: { now: () => now } })
   const props = subject ?? vue.reactive({ deviceId: 'a', projectId: 'p', status }), scope = vue.effectScope()
   const state = scope.run(() => useDeviceConnectionObservation(props))
   t.after(() => scope.stop())
-  return { state, props, permission, visibility, scope, calls, timers, deactivate: () => deactivate(), tick: async () => { const [id, fn] = [...timers][0] || []; assert.ok(fn, 'one scheduled sample'); timers.delete(id); now += 2000; fn(); await settle() } }
+  return { state, props, permission, visibility, scope, calls, timers, delays, deactivate: () => deactivate(), tick: async () => { const [id, fn] = [...timers][0] || []; assert.ok(fn, 'one scheduled sample'); timers.delete(id); now += delays.get(id); delays.delete(id); fn(); await settle() } }
 }
 
 test('opening starts one sample and a second valid sample computes rates and preserves a real zero', async t => {
@@ -42,7 +42,7 @@ test('opening starts one sample and a second valid sample computes rates and pre
   assert.equal(observations.deviceObservationCurrentPoint(f.state.history.value).receive, undefined)
   await f.tick()
   const point = observations.deviceObservationCurrentPoint(f.state.history.value)
-  assert.equal(point.receive, 2048); assert.equal(point.send, 0); assert.equal(point.pending, 0)
+  assert.equal(point.receive, 4096); assert.equal(point.send, 0); assert.equal(point.pending, 0)
 })
 
 test('closing, pausing, hidden document and deactivation stop sampling and break the rate baseline', async t => {
@@ -83,6 +83,7 @@ test('forbidden and unsupported responses stop automatic requests, empty results
   const f = fixture(t, async () => ({ status: 200, result: [] }))
   f.state.open.value = true; await settle(); assert.equal(f.state.state.value.status, 'empty')
   assert.deepEqual(f.state.sessions.value, [])
+  assert.equal([...f.delays.values()][0], 2000)
 })
 
 test('refresh errors keep the last snapshot, mark a gap and recover without bridging missing samples', async t => {
@@ -99,10 +100,12 @@ test('online summary samples immediately and opening or closing details keeps on
   const f = fixture(t, undefined, 'online')
   await settle()
   assert.deepEqual(f.calls, ['a']); assert.equal(f.timers.size, 1)
+  assert.equal([...f.delays.values()][0], 1000, 'the first valid rate uses a short baseline interval')
   f.state.open.value = true; await settle()
   f.state.open.value = false; await settle()
   assert.deepEqual(f.calls, ['a']); assert.equal(f.timers.size, 1)
   await f.tick(); assert.equal(f.calls.length, 2)
+  assert.equal([...f.delays.values()][0], 2000, 'subsequent samples respect the normal interval')
   f.props.status = 'offline'
   assert.equal(f.timers.size, 0)
 })

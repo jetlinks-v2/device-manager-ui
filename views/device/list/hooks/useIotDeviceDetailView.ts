@@ -153,7 +153,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
   const tagsExpanded = ref(false)
   const tagsOverflow = ref(false)
   const tagsExpandedOffset = ref(0)
-  const editDrawerOpen = ref(false)
   const actionBusyId = ref('')
   const actionKind = ref<'toggle' | 'delete' | ''>('')
   const actionError = ref('')
@@ -310,7 +309,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
       })
       return
     }
-    editDrawerOpen.value = true
   }
 
   function backToDeviceList() {
@@ -335,11 +333,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     const productId = device.value?.productId || device.value?.productKey
     if (!productId || !canOpenProductDetail.value) return
     deviceMenu.jumpPage('device/Product/Detail', { params: { id: productId } })
-  }
-
-  async function onDeviceSaved() {
-    editDrawerOpen.value = false
-    await loadAll()
   }
 
   async function toggleDeviceEnabled() {
@@ -1660,7 +1653,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     tagsExpanded,
     tagsOverflow,
     tagsExpandedOffset,
-    editDrawerOpen,
     actionBusyId,
     actionKind,
     canOpenProductDetail,
@@ -1672,7 +1664,6 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
     ...parentDeviceLink,
     openProductDetail,
     backToDeviceList,
-    onDeviceSaved,
     toggleDeviceEnabled,
     copyDeviceId,
     confirmDeleteDevice,

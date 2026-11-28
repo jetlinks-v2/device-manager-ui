@@ -36,16 +36,22 @@ export function useDeviceHeaderEditing(props: {
     } finally { if (active(id, epoch)) busy.value = false }
   }
 
-  async function saveName(value: string) {
-    const name = value.trim(), language = String(locale.value)
-    if (!name || name.length > 64) { failure.value = t(!name ? 'IotDeviceList.add.nameRequired' : 'IotDeviceDetail.header.nameTooLong'); throw new Error(failure.value) }
+  async function saveText(field: 'name' | 'description', value: string, translations?: Record<string, string>) {
+    const text = value.trim(), language = String(locale.value), max = field === 'name' ? 64 : 200
+    if (field === 'name' && !text || text.length > max || Object.values(translations ?? {}).some(value => value.length > max)) {
+      failure.value = t(field === 'name' && !text ? 'IotDeviceList.add.nameRequired' : 'I18n.maxLength', { max })
+      throw new Error(failure.value)
+    }
     await commit(async (id, current) => {
       const latest = await getDeviceDetail_api(id)
       if (!latest || !current()) throw new Error(t('IotDeviceDetail.header.loadFailed'))
       const messages = latest.i18nMessages ?? {}
-      await updateDeviceHeader_api(id, { name, i18nMessages: { ...messages, name: updateI18nText(messages.name, language, name) } })
+      const i18nMessages = { ...messages, [field]: translations ?? updateI18nText(messages[field], language, text) }
+      await updateDeviceHeader_api(id, field === 'name' ? { name: text, i18nMessages } : { describe: text, i18nMessages })
     })
   }
+  const saveName = (value: string, translations?: Record<string, string>) => saveText('name', value, translations)
+  const saveDescription = (value: string, translations?: Record<string, string>) => saveText('description', value, translations)
 
   const saveIcon = (value: string) => commit(async id => { await updateDeviceHeader_api(id, { photoUrl: value.trim() }) })
 
@@ -92,5 +98,5 @@ export function useDeviceHeaderEditing(props: {
       })
     })
   }
-  return { loading, busy, failure, loadError, detail, options, saveName, saveIcon, prepareScope, saveScope }
+  return { loading, busy, failure, loadError, detail, options, saveName, saveDescription, saveIcon, prepareScope, saveScope }
 }

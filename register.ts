@@ -104,6 +104,7 @@ export default {
   },
   components: {
     DeviceDetailName: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailName.vue')),
+    DeviceDetailDescription: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailDescription.vue')),
     DeviceDetailIcon: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailIcon.vue')),
     DeviceDetailScopeField: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailScopeField.vue')),
     DeviceDetailConnection: defineAsyncComponent(() => import('./components/device-detail/DeviceDetailConnection.vue')),

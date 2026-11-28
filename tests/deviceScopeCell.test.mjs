@@ -79,6 +79,7 @@ test('binding values loaded after opening become the initial draft', async t => 
   assert.deepEqual(state.draft, ['chosen'])
 })
 
+
 test('scope saves share pending and success feedback, reject duplicates and retain failed drafts', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] })
   const calls = []

@@ -1,5 +1,5 @@
 <template>
-  <DetailHeader v-if="device" variant="summary" compact :resource-type="resourceType" :meta-label="$t('components.DetailHeader.moreInfo')" :meta-title="$t('IotDeviceDetail.header.deviceInfo')" :meta-editable="canInlineEditDeviceMetadata" :meta-edit-disabled="!!actionBusyId" :title="deviceNameText" @edit-meta="openEditDrawer">
+  <DetailHeader v-if="device" variant="summary" compact :resource-type="resourceType" :meta-label="$t('components.DetailHeader.moreInfo')" :meta-title="$t('IotDeviceDetail.header.deviceInfo')" :title="deviceNameText">
     <template #icon>
       <DeviceDetailIcon :device-id="device.id" :project-id="projectId" :value="device.imageUrl" :name="deviceNameText" :fallback-icon="categoryIcon" :allowed="canInlineEditDeviceMetadata" :disabled="!!actionBusyId" :refresh="onDetailContentChanged" />
     </template>
@@ -21,6 +21,7 @@
       <DetailMetaItem kind="space" :show-label="expanded" :label="$t('IotDeviceDetail.detail.area')">
         <DeviceDetailScopeField :device-id="device.id" :project-id="projectId" kind="area" :text="device.areaBindings?.map(area => area.area).join(' / ') || ''" :allowed="canInlineEditDeviceMetadata" :disabled="!!actionBusyId" :refresh="onDetailContentChanged" />
       </DetailMetaItem>
+      <DetailMetaItem kind="description" :show-label="expanded" :label="$t('IotDeviceList.basicFields.label.description')"><DeviceDetailDescription :device-id="device.id" :project-id="projectId" :description="device.summary && device.summary !== '--' ? device.summary : ''" :i18n-messages="device.i18nMessages" :compact="!expanded" :allowed="canInlineEditDeviceMetadata" :disabled="!!actionBusyId" :refresh="onDetailContentChanged" /></DetailMetaItem>
       <DetailMetaItem v-if="parentDeviceId" kind="category" :show-label="expanded" merged-tooltip :label="$t('IotDeviceDetail.detail.parentDevice')" :tooltip="parentDeviceName">
         <a-button type="link" class="dd-summary-action" @click="openParentDevice">{{ parentDeviceName }}</a-button>
       </DetailMetaItem>
@@ -48,6 +49,7 @@ import DetailHeader from '@jetlinks-web-core/components/DetailHeader/index.vue'
 import { DetailIdentifier } from '@jetlinks-web-core/components/DetailHeader'
 import DetailMetaItem from '@jetlinks-web-core/components/DetailMetaItem'
 import DeviceDetailName from '../../../../../components/device-detail/DeviceDetailName.vue'
+import DeviceDetailDescription from '../../../../../components/device-detail/DeviceDetailDescription.vue'
 import DeviceDetailIcon from '../../../../../components/device-detail/DeviceDetailIcon.vue'
 import DeviceDetailScopeField from '../../../../../components/device-detail/DeviceDetailScopeField.vue'
 import DeviceConnectionStatus from '../../../../../components/device-detail/DeviceConnectionStatus.vue'

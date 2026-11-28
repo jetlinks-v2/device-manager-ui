@@ -3,11 +3,10 @@
     <template #display="{ contentId }">
       <a-tooltip :title="text || placeholder"><button v-bind="$attrs" class="device-scope-cell" :class="{ 'is-missing': !text, 'is-editable': allowed }" type="button" :disabled="!allowed || disabled || saving" :aria-label="`${label} · ${text || placeholder}`" :aria-controls="contentId" :aria-expanded="open" @click="changeOpen(true)"><AIcon v-if="showIcon" :type="detailMetaIcons[kind === 'area' ? 'space' : 'group']" /><span class="device-scope-cell__text">{{ text || placeholder }}</span><SaveFeedback v-if="!open" :state="feedback" class="device-scope-cell__feedback" /></button></a-tooltip>
     </template>
-    <span v-if="open" class="device-scope-cell__editor">
-    <a-tree-select v-if="open" class="device-scope-cell__select" :value="kind === 'group' ? draft : draft[0]" :open="dropdownOpen" :tree-data="options" :multiple="kind === 'group'" :allow-clear="kind === 'group'" :max-tag-count="0" :max-tag-placeholder="values => values.map(item => item.label).join(' / ')" :bordered="false" size="small" show-search tree-default-expand-all tree-node-filter-prop="title" :placeholder="placeholder" :aria-label="label" :disabled="saving || disabled" :loading="loading" :dropdown-match-select-width="false" :dropdown-render="renderDropdown" :dropdown-style="{ minWidth: 'min(240px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: '320px', overflow: 'auto' }" @change="selectDraft" @dropdown-visible-change="changeDropdownOpen" @keydown.esc.stop.prevent="changeOpen(false)" @keydown.ctrl.enter.stop.prevent="submit" @keydown.meta.enter.stop.prevent="submit">
-      <template #suffixIcon><AIcon v-if="!feedback" type="DownOutlined" /></template>
+    <span v-if="open" class="device-scope-cell__editor" :style="{ fontSize: text ? undefined : '12px' }">
+    <a-tree-select v-if="open" class="device-scope-cell__select" :value="kind === 'group' ? draft : draft[0]" :open="dropdownOpen" :tree-data="options" :multiple="kind === 'group'" :allow-clear="kind === 'group'" :max-tag-count="0" :max-tag-placeholder="values => values.map(item => item.label).join(' / ')" :bordered="false" size="small" show-search tree-default-expand-all tree-node-filter-prop="title" :placeholder="placeholder" :aria-label="label" :disabled="saving || disabled" :loading="loading" :show-arrow="false" :dropdown-match-select-width="false" :dropdown-render="renderDropdown" :dropdown-style="{ minWidth: 'min(240px, calc(100vw - 32px))', maxWidth: 'calc(100vw - 32px)', maxHeight: '320px', overflow: 'auto' }" @change="selectDraft" @dropdown-visible-change="changeDropdownOpen" @keydown.esc.stop.prevent="changeOpen(false)" @keydown.ctrl.enter.stop.prevent="submit" @keydown.meta.enter.stop.prevent="submit">
     </a-tree-select>
-      <SaveFeedback :state="feedback" class="device-scope-cell__editor-feedback" />
+      <span class="device-scope-cell__editor-feedback"><SaveFeedback v-if="feedback" :state="feedback" /><AIcon v-else type="DownOutlined" aria-hidden="true" /></span>
     </span>
   </InlineEditSurface>
       <DefineDropdown v-slot="{ menuNode }">
@@ -41,9 +40,9 @@ const [DefineDropdown, ScopeDropdown] = createReusableTemplate<{ menuNode?: VNod
 const renderDropdown: TreeSelectProps['dropdownRender'] = options => h(ScopeDropdown, { menuNode: options?.menuNode })
 </script>
 <style scoped>
-.device-scope-cell { position:relative; display:flex; align-items:center; gap:6px; width:100%; min-width:6em; padding:0; border:0; background:transparent; color:inherit; text-align:start; line-height:var(--device-scope-line-height, 20px); }
+.device-scope-cell { position:relative; display:flex; align-items:center; gap:calc(var(--space-3)/2); width:100%; min-width:6em; padding:0; border:0; background:transparent; color:inherit; text-align:start; line-height:var(--device-scope-line-height, 20px); }
 .device-scope-cell__text { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.device-scope-cell.is-editable { padding-inline-end:20px; }
+.device-scope-cell.is-editable { padding-inline-end:var(--space-6,24px); }
 .device-scope-cell__feedback { position:absolute; inset-inline-end:2px; }
 .device-scope-cell > .anticon { flex:none; font-size:12px; color:var(--jet-theme-text-secondary); }
 .device-scope-cell.is-missing { color:var(--jet-theme-text-secondary); font-size:12px; }
@@ -52,8 +51,10 @@ const renderDropdown: TreeSelectProps['dropdownRender'] = options => h(ScopeDrop
 .device-scope-cell:focus-visible { outline:2px solid var(--jet-theme-primary); outline-offset:3px; }
 .device-scope-cell__editor { position:relative; display:block; width:var(--inline-edit-anchor-width, 6em); max-width:calc(100vw - 52px); }
 .device-scope-cell__select { width:100%; font-size:inherit; }
-.device-scope-cell__editor-feedback { position:absolute; inset-inline-end:10px; top:0; bottom:0; margin-block:auto; height:16px; pointer-events:none; }
-.device-scope-cell__dropdown { display:flex; flex-direction:column; gap:8px; }
-.device-scope-cell__dropdown > :is(.ant-skeleton,.ant-alert) { padding:8px; }
-.device-scope-cell__actions { display:flex; justify-content:flex-end; gap:8px; padding:8px; border-top:1px solid var(--line); }
+.device-scope-cell__editor > .device-scope-cell__select :deep(.ant-select-selector) { padding-inline:0 18px; font:inherit; }
+.device-scope-cell__editor > .device-scope-cell__select :deep(.ant-select-selection-item),.device-scope-cell__editor > .device-scope-cell__select :deep(.ant-select-selection-placeholder) { padding-inline-end:0; font:inherit; }
+.device-scope-cell__editor-feedback { position:absolute; inset-inline-end:2px; top:0; bottom:0; margin-block:auto; height:16px; display:inline-flex; align-items:center; color:var(--jet-theme-text-secondary); font-size:12px; pointer-events:none; }
+.device-scope-cell__dropdown { display:flex; flex-direction:column; gap:var(--space-2); }
+.device-scope-cell__dropdown > :is(.ant-skeleton,.ant-alert) { padding:var(--space-2); }
+.device-scope-cell__actions { display:flex; justify-content:flex-end; gap:var(--space-2); padding:var(--space-2); border-top:1px solid var(--line); }
 </style>
