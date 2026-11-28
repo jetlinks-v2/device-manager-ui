@@ -9071,5 +9071,6 @@
   "DeviceMetrics.notActive": "未稼働",
   "DeviceMetrics.descendantGroups": "下位グループ",
   "DeviceMetrics.memberMetrics": "メンバーデバイスの指標",
-  "DeviceMetrics.platformOnline": "プラットフォームとの接続状態"
+  "DeviceMetrics.platformOnline": "プラットフォームとの接続状態",
+  "ObjectPresentation.thingData": "モノモデルデータ"
 }

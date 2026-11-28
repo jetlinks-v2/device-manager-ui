@@ -4,7 +4,6 @@ import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import type { MetricDimensionProvider } from '@rule-engine-manager-ui/metric'
 import MetricObjectNavigator from './views/device/metrics/navigation/MetricObjectNavigator.vue'
 import { queryMetricGroupTree, queryMetricOwnerPage, resolveMetricObjects } from './api/metricNavigation'
-import { useMetricSourceAdapter } from '@rule-engine-manager-ui/metric'
 
 const deviceCodes = ['iot-user-device-list', 'iot-user/device/list', 'device/Instance']
 const has = (codes: string[], action: string) => useAuthStore().hasPermission(codes.map(code => `${code}:${action}`))
@@ -23,7 +22,7 @@ export default {
     resolveObjects: ids => resolveMetricObjects('deviceGroup', ids),
     readScopes: () => [...(deviceMenu() ? [{ memberType:'device', label:i18n.global.t('DeviceMetrics.devices'), icon:'DesktopOutlined', tree:true }] : []),
       { memberType:'deviceGroup', label:i18n.global.t('DeviceMetrics.descendantGroups'), icon:'FolderOutlined', tree:true }],
-    available: () => Boolean(deviceMenu()), canEdit: () => has(deviceCodes, 'update'), navigator: navigator('deviceGroup'), useSourcePicker: useMetricSourceAdapter,
+    available: () => Boolean(deviceMenu()), canEdit: () => has(deviceCodes, 'update'), navigator: navigator('deviceGroup'),
     toBusiness: selection => {
       const code = deviceMenu()
       if (!code) return
@@ -34,7 +33,7 @@ export default {
     resolveObjects: ids => resolveMetricObjects('product', ids),
     readScopes: () => deviceMenu() ? [{ memberType:'device', label:i18n.global.t('DeviceMetrics.devices'), icon:'DesktopOutlined' }] : [],
     inheritance: () => ({ targetType: 'device', label: i18n.global.t('DeviceMetrics.deviceInheritance') }),
-    available: () => useMenuStore().hasMenu('device/Product') && has(['device/Product'], 'view'), canEdit: () => has(['device/Product'], 'update'), navigator: navigator('product'), useSourcePicker: useMetricSourceAdapter,
+    available: () => useMenuStore().hasMenu('device/Product') && has(['device/Product'], 'view'), canEdit: () => has(['device/Product'], 'update'), navigator: navigator('product'),
     toBusiness: selection => {
       const menu = useMenuStore()
       if (!menu.hasMenu('device/Product/Detail')) return
@@ -43,7 +42,7 @@ export default {
   },
   device: { ownerType: 'device', label: () => i18n.global.t('DeviceMetrics.devices'), icon: 'DesktopOutlined', order: 0,
     resolveObjects: ids => resolveMetricObjects('device', ids),
-    available: () => Boolean(deviceMenu()), canEdit: () => has(deviceCodes, 'update'), navigator: navigator('device'), useSourcePicker: useMetricSourceAdapter,
+    available: () => Boolean(deviceMenu()), canEdit: () => has(deviceCodes, 'update'), navigator: navigator('device'),
     toBusiness: selection => {
       const menu = useMenuStore()
       const code = deviceMenu()

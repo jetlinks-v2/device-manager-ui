@@ -12,6 +12,7 @@ import {
   undeployDevice_api,
 } from '@device-manager-ui/api/device'
 import { DEVICE_CATEGORY_META } from './useDeviceLibraryMeta'
+import { getObjectTypeIcon } from '@jetlinks-web-core/components/IconValue/objectTypeIcons'
 import { useDeviceLibrary } from './useDeviceLibrary'
 import { useIotDataAccessRefresh } from './useIotDataAccessRefresh'
 import { buildIotDeviceHealthPath, buildIotDeviceListPath, resolveIotProjectId } from './useIotDeviceRouting'
@@ -621,7 +622,7 @@ export function useIotDeviceDetailView(props: IotDeviceDetailViewProps = {}, onE
 
   const categoryIcon = computed<string>(() => {
     if (categoryKey.value) return DEVICE_CATEGORY_META[categoryKey.value].icon
-    return 'HddOutlined'
+    return getObjectTypeIcon('device')
   })
 
   function isNumericPoint(point: IotTelemetryPoint): boolean {
