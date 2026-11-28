@@ -17,9 +17,10 @@ export const uploadFile = () => `${getBaseApi()}${pluginUploadPath}`
 // 文件传输与节点检查分阶段进行，保持统一请求上下文和最终解析结果。
 export const uploadPluginFile = createPluginDriverUpload();
 
-export const add = (data: any) => request.post('/plugin/driver', data)
+// 原生检查和应用由服务端按有效进度判定停滞，避免全局短超时误报保存失败。
+export const add = (data: any) => request.post('/plugin/driver', data, { timeout: 0 })
 
-export const update = (data: any) => request.patch('/plugin/driver', data)
+export const update = (data: any) => request.patch('/plugin/driver', data, { timeout: 0 })
 
 export const removeFn = (id: string) => request.remove(`/plugin/driver/${id}`)
 

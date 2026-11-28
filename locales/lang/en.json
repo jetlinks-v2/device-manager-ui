@@ -6,7 +6,7 @@
   "pluginInstall.resolving": "Reading driver information",
   "pluginInstall.finishing": "Finishing driver check",
   "pluginInstall.checked": "Driver check passed",
-  "pluginInstall.unsupported": "Not applicable",
+  "pluginInstall.unsupported": "Not applicable or checking unavailable",
   "pluginInstall.failed": "Driver check failed",
   "pluginInstall.cancelled": "Check cancelled",
   "pluginInstall.items": "{count} items checked",

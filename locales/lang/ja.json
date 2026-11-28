@@ -6,7 +6,7 @@
   "pluginInstall.resolving": "ドライバー情報を読み取り中",
   "pluginInstall.finishing": "ドライバーの確認を完了中",
   "pluginInstall.checked": "ドライバーの確認に成功",
-  "pluginInstall.unsupported": "対象外",
+  "pluginInstall.unsupported": "対象外、または確認機能が利用できません",
   "pluginInstall.failed": "ドライバーの確認に失敗",
   "pluginInstall.cancelled": "確認をキャンセル済み",
   "pluginInstall.items": "{count} 件を確認済み",

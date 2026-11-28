@@ -6,7 +6,7 @@
   "pluginInstall.resolving": "正在读取驱动信息",
   "pluginInstall.finishing": "正在完成驱动检查",
   "pluginInstall.checked": "驱动检查通过",
-  "pluginInstall.unsupported": "不适用",
+  "pluginInstall.unsupported": "不适用或暂不支持检查",
   "pluginInstall.failed": "驱动检查失败",
   "pluginInstall.cancelled": "已取消检查",
   "pluginInstall.items": "已检查 {count} 项",
