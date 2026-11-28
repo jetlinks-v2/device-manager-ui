@@ -170,9 +170,9 @@ const [DefineEmpty, Empty] = createReusableTemplate()
 <style scoped lang="less">
 .device-results__viewport { flex:1; min-width:0; min-height:0; overflow:hidden; }
 .device-results__cards { display:flex; flex-direction:column; height:100%; min-height:0; container:device-cards / inline-size; }
-.device-results__select-loaded { height:48px; flex:none; display:flex; align-items:center; padding:0 16px; border-bottom:1px solid var(--line); background:var(--jet-theme-bg-container); }
+.device-results__select-loaded { height:48px; flex:none; display:flex; align-items:center; padding:0 var(--space-4,16px); border-bottom:1px solid var(--line); background:var(--jet-theme-bg-container); }
 .device-results__card-scroll { flex:1 1 0; min-height:0; background:var(--jet-theme-bg-layout); }
-.device-results__card { height:calc(100% - 12px); margin:6px 12px; box-sizing:border-box; padding:12px 14px; border:1px solid var(--line); border-radius:var(--r-2,4px); background:var(--jet-theme-bg-container); display:flex; flex-direction:column; gap:8px; }
+.device-results__card { height:calc(100% - 12px); margin:6px 0; box-sizing:border-box; padding:12px var(--space-4,16px); border-block:1px solid var(--line); background:var(--jet-theme-bg-container); display:flex; flex-direction:column; gap:8px; }
 .device-results__card.is-selected { background:var(--jet-theme-color-primary-bg, var(--info-bg)); }
 .device-results__card-heading { display:grid; grid-template-columns:16px minmax(0, 1fr) auto; gap:8px; align-items:start; min-width:0; }
 .device-results__card-heading > .ant-checkbox-wrapper { margin-top:3px; }
