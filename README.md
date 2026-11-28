@@ -1,6 +1,14 @@
 # Device Manager UI
 
+`assetRelationBindings.ts` 通过 core 既有模块中心注册设备直接字段的组织归属绑定适配器，精确匹配资产、维度、来源和 owner 查询角色；组织选择器仍由身份模块提供，写入调用原统一资产接口。不从关系名称推断可写，不将通用授权表的共享绑定显示为归属，不依赖本体实现。默认请求角色由适配器维护，后端继续执行原授权、owner 禁令和数据约束。
+
 对象展示由 `objectPresentations.ts` 经 core 注册：设备卡片保留状态，告警等贡献由对应模块合并；不再重复显示图关系已表达的所属产品。产品保留状态、设备类型和有权限的设备数量；这些摘要本身不构成补充详情，业务页仍通过声明的导航入口访问。
+
+属性关注配置复用 core 的对象能力 API，读取 `device-data` 实例模型及设备来源的 `productId` 属性，
+不再依赖设备专用 `property-metadata` 接口。选择范围以当前实例实际声明的可读字段为准，保留最多 8 个属性
+及原 `productIds` 参数；切换设备会取消旧请求，模型或产品身份不可读时不提交新的配置。
+`tests/objectPropertyFocus.test.mjs` 的 7 项回归、定向类型检查和设备模块构建通过；覆盖原请求上下文、
+产品范围、晚到响应和读取失败，运行中的服务尚未进行本轮页面复验。
 
 设备管理前端模块，提供设备、产品与物联告警等页面。菜单定义由 `baseMenu.ts` 加载 `baseMenu.json`。
 
@@ -23,6 +31,8 @@
 `views/device/list/components/IotDeviceScopeSidebar.vue` 使用 core 的 `AutoTree` 自动适配侧栏高度并启用虚拟滚动，保留原有树属性、插槽和选择事件。该入口依赖 [core PR #224](https://github.com/jetlinks-v2/jetlinks-web-core/pull/224)；异步页面首次挂载的滚轮绑定还依赖运行时工作区的 `patches/ant-design-vue@4.2.6.patch`，发布时需同步交付。
 
 `views/link/AccessConfig/index.vue` 为描述列启用 `ellipsis`，长描述省略显示。
+
+设备详情标签在 `views/device/list/components/device-detail/tags/tagEditor.ts` 合并产品字段定义与设备保存值，保留实例记录 ID 供清除操作使用。枚举与布尔值按字段定义回显，缺值保持未设置，真实的 `0` 和 `false` 不按空值处理。
 
 ## 网络组件本地端口
 

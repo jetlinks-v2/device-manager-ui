@@ -2,9 +2,10 @@ import i18n from '@jetlinks-web-core/locales'
 import dataCapabilityProviders from './dataCapabilities'
 import { deviceMetricsSupported, deviceMetricsAggregate, deviceOverviewSummary } from './runtimeMetrics'
 import { defineAsyncComponent } from 'vue'
+import objectPresentations from './objectPresentations'
+import { deviceAssetRelationBindings } from './assetRelationBindings'
 import metricDimensions from './metricDimensions'
 import { iotMetricStarters } from './views/metric/Template/starters'
-import { useMetricSourceAdapter } from '@rule-engine-manager-ui/metric'
 import type { DeviceDetailTabProvider } from './deviceDetailProvider'
 import { queryNoPagingPost } from '@device-manager-ui/api/product'
 import { queryNoPagingPost as queryInstanceNoPage, query } from '@device-manager-ui/api/instance'
@@ -15,7 +16,7 @@ import { useDeviceConnectionHeader } from './deviceDetailConnection'
 import { useSystemMonitorOverview } from './visDashboard/SystemMonitor/hooks/useSystemMonitorOverview'
 import { getDeviceListSearchTerms } from './deviceListFilter'
 import { queryDeviceSpaceAreaBindings_api } from './api/spaceArea'
-import { queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
+import { batchDeviceNodeSummary_api, queryDeviceBoundGroups_api, queryRuntimeDevices_api } from './api/deviceGroup'
 import type { DataCapabilityProviderManifest } from '@jetlinks-web-core/data-capability'
 import type { AgentCapabilityProviderResource } from '@jetlinks-web-core/layout/components/AiChat/routeCapabilityLoader'
 import {
@@ -64,7 +65,9 @@ const homeAgentProviders = Object.fromEntries(
 )
 
 export default {
+  assetRelationBindings: deviceAssetRelationBindings,
   moduleId: 'device-manager-ui',
+  objectPresentations,
   metricDimensions,
   metricTemplateStarters: { iot: () => iotMetricStarters },
   dataCapabilityProviders,
@@ -98,6 +101,7 @@ export default {
     deviceSpaceAreaBindings: queryDeviceSpaceAreaBindings_api,
     deviceBoundGroups: queryDeviceBoundGroups_api,
     deviceRuntimePage: queryRuntimeDevices_api,
+    deviceScopeCounts: batchDeviceNodeSummary_api,
     productNoPage: queryNoPagingPost,
     instanceNoPage: queryInstanceNoPage,
     instancePage: query
@@ -112,6 +116,7 @@ export default {
     DeviceConnectionMetrics: defineAsyncComponent(() => import('./components/device-detail/DeviceConnectionMetrics.vue')),
     DeviceConnectionContext: defineAsyncComponent(() => import('./components/device-detail/DeviceConnectionContext.vue')),
     DeviceDetailTagsHost: defineAsyncComponent(() => import('./views/device/list/components/device-detail/tags/DeviceDetailTagsHost.vue')),
+    DeviceProductPicker: defineAsyncComponent(() => import('./components/DeviceProductPicker.vue')),
     DeviceDetailActions: defineAsyncComponent(() => import('./views/device/list/components/device-detail/DeviceDetailActions.vue')),
     MetricObjectNavigator: defineAsyncComponent(() => import('./views/device/metrics/navigation/MetricObjectNavigator.vue')),
     ObjectMetrics: defineAsyncComponent(() => import('./views/device/metrics/ObjectMetrics.vue')),
@@ -135,7 +140,6 @@ export default {
   hooks: {
     useDeviceConnectionHeader,
     useSystemMonitorOverview,
-    useMetricSourcePicker: useMetricSourceAdapter,
     useDeviceScope,
     usePluginPermissionContext
   },

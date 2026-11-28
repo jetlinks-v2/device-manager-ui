@@ -2,6 +2,8 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { DeviceQueryTerm } from './api/device'
 import { queryDeviceGroupDetailList_api, type DeviceGroup } from './api/deviceGroup'
+export { batchDeviceNodeSummary_api as queryDeviceScopeCounts } from './api/deviceGroup'
+export type { IotDeviceProductTemplate as DeviceProductSelection } from './api/device'
 import {
   existsDeviceSpaceAreaSupport_api,
   queryProjectSpaceAreaSettings_api,

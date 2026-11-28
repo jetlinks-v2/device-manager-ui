@@ -2,7 +2,6 @@ import dayjs from 'dayjs'
 import type { TableColumnsType } from 'ant-design-vue'
 import type { Component } from 'vue'
 import type { UnifiedDevice } from '../../../../deviceListProvider'
-import type { GatewayRuntimeMetricsMap } from '../../../../../edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import type { DeviceDetailState } from './useUnifiedDeviceRows'
 
 import type { DeviceScopeKind, DeviceScopeOption } from '../../../../components/deviceScopeTypes'
@@ -28,7 +27,7 @@ export interface UnifiedDeviceResultsModel {
   showArea: boolean
   showChannel: boolean
   monitorCell?: Component
-  monitorMetrics: GatewayRuntimeMetricsMap
+  monitorMetrics: Record<string, unknown>
   stateAction: { allowed: boolean; disabled: boolean }
   scopeEditor: {
     allowed: boolean; disabled: boolean; loading: boolean; error: string

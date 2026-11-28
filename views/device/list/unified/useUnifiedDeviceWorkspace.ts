@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Component } from 'vue'
+import { computed, ref, watch, type Component, type Ref } from 'vue'
 import { Modal } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { getToken, onlyMessage } from '@jetlinks-web/utils'
@@ -8,7 +8,6 @@ import { ResponsiveSplitter } from '@jetlinks-web-core/components'
 import { useRoute } from 'vue-router'
 import { useAuthStore, useMenuStore } from '@jetlinks-web-core/store'
 import { moduleRegistry } from '@jetlinks-web-core/utils/module-registry'
-import type { useGatewayRuntimeMetricsLoader as UseGatewayRuntimeMetricsLoader } from '../../../../../edge-master-ui/views/workbench/gateway/hooks/useGatewayRuntimeMetricsLoader'
 import { useIotDeviceGroupManagement } from '../hooks/useIotDeviceGroupManagement'
 import { saveIotDeviceAreaGroupBindings } from '../hooks/iotDeviceAreaGroupBindings'
 import { buildAreaTreeData } from '../hooks/iotAreaTreeOptions'
@@ -24,6 +23,9 @@ import { useHomeAgentFeatureEntry } from '@jetlinks-web-core/layout/components/A
 import { DEVICE_ONBOARDING_CAPABILITY_ID } from '@device-manager-ui/agentCapabilities/deviceGuidance/homeAgentProvider'
 import type { UnifiedDevice } from '../../../../deviceListProvider'
 import { IOT_UNBOUND_AREA_SCOPE_ID, IOT_UNASSIGNED_GROUP_SCOPE_ID, IOT_ALL_BOUND_AREAS_SCOPE_ID, IOT_ALL_ASSIGNED_GROUPS_SCOPE_ID } from '../hooks/iotDeviceScopeTerms'
+
+// Optional monitor payloads are owned by the registered monitor component.
+type GatewayMetricsLoader = (targets: Readonly<Ref<Array<{ id: string; deviceId: string; productId?: string }>>>) => { metricsMap: Record<string, unknown> }
 
 export function useUnifiedDeviceWorkspace() {
 const { t } = useI18n()
@@ -52,7 +54,7 @@ const list = useUnifiedDeviceList()
 const { providers, isIotEntry, tabs, activeType, activeProvider, scope, baseTerms, filterTerms, filterFields, commonFilterFields, searchTerms, hasSearch, status, rows, total, loading, error, counts, statusCounts, selectedIds, batchMode, providerOf, changeType, search, changeStatus, refresh, clearBatchSelection } = list
 const channelSupported = useDeviceListChannelSupport(activeProvider)
 const gatewayMonitorCell = moduleRegistry.getResourceItem<Component>('edge-master-ui', 'components', 'GatewayDeviceMonitorCell')
-const useGatewayMetrics = moduleRegistry.getResourceItem<typeof UseGatewayRuntimeMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
+const useGatewayMetrics = moduleRegistry.getResourceItem<GatewayMetricsLoader>('edge-master-ui', 'hooks', 'useGatewayRuntimeMetricsLoader')
 const visibleIds = ref<string[]>([])
 const gatewayMetricTargets = computed(() => activeType.value === 'gateway'
   ? rows.value.filter(device => visibleIds.value.includes(device.id)).map(device => ({ id: device.id, deviceId: device.id, productId: device.productId })) : [])
