@@ -1,7 +1,7 @@
 <template>
-  <DetailHeader v-if="device" variant="summary" compact :resource-type="resourceType" :meta-label="$t('components.DetailHeader.moreInfo')" :meta-title="$t('IotDeviceDetail.header.deviceInfo')" :title="deviceNameText">
+  <DetailHeader v-if="device" variant="summary" compact :meta-label="$t('components.DetailHeader.moreInfo')" :meta-title="$t('IotDeviceDetail.header.deviceInfo')" :title="deviceNameText">
     <template #icon>
-      <DeviceDetailIcon :device-id="device.id" :project-id="projectId" :value="device.imageUrl" :name="deviceNameText" :fallback-icon="categoryIcon" :allowed="canInlineEditDeviceMetadata" :disabled="!!actionBusyId" :refresh="onDetailContentChanged" />
+      <DeviceDetailIcon :device-id="device.id" :project-id="projectId" :value="device.imageUrl" :name="deviceNameText" :fallback-icon="typeIcon" :type-label="deviceTypeText" :allowed="canInlineEditDeviceMetadata" :disabled="!!actionBusyId" :refresh="onDetailContentChanged" />
     </template>
     <template #title><DeviceDetailName :device-id="device.id" :project-id="projectId" :name="device.name" :i18n-messages="device.i18nMessages" :allowed="canInlineEditDeviceMetadata" :disabled="!!actionBusyId" :refresh="onDetailContentChanged" /></template>
     <template #identifier><DetailIdentifier :value="deviceSnText" @copy="copyDeviceId"><template v-if="device.accessProvider === 'plugin_gateway'" #after><DeviceIdMapping icon-only :device="device" :can-update="canDeviceAction('update')" @saved="onDetailContentChanged" /></template></DetailIdentifier></template>
@@ -96,8 +96,7 @@ type ViewState = Pick<IotDeviceDetailViewState,
   'isDeviceDisabled' |
   'thingModelTags' |
   'formatTagTooltipValueOnly' |
-  'toggleTagsExpanded' |
-  'categoryIcon'
+  'toggleTagsExpanded'
 >
 const props = defineProps({ state: { type: Object as PropType<ViewState>, required: true } })
 const {
@@ -120,7 +119,6 @@ const {
   deviceTypeText,
   isDeviceDisabled,
   thingModelTags,
-  categoryIcon,
   canDeviceAction,
   canInlineEditDeviceMetadata,
   projectId,
@@ -129,10 +127,7 @@ const {
 const { statusMeta } = useIotDeviceMeta()
 const deviceStatus = computed(() => device.value ? statusMeta(device.value.connectionStatus || device.value.status) : undefined)
 const observation = useDeviceConnectionHeader({ get deviceId() { return device.value?.id || '' }, get projectId() { return projectId.value }, get status() { return device.value?.connectionStatus || device.value?.status || 'disabled' } })
-const resourceType = computed(() => {
-  const value = device.value?.deviceTypeValue || device.value?.deviceType
-  return value ? { icon: getIotDeviceTypeIcon(value), label: deviceTypeText.value } : undefined
-})
+const typeIcon = computed(() => getIotDeviceTypeIcon(device.value?.deviceTypeValue || device.value?.deviceType))
 </script>
 
 <style scoped src="../../styles/IotDeviceDetailHeader.css"></style>

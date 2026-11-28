@@ -339,7 +339,7 @@ export const toDevice = (item: DeviceDetailResponse): IotDevice => {
     gatewayName: undefined,
     identifier: item.identifier || item.id || '--',
     // 设备保存接口写入的是 photoUrl，列表接口部分场景不会回填 devicePhotoUrl。
-    imageUrl: resolveDeviceImageUrl(item.devicePhotoUrl || item.photoUrl || item.productPhotoUrl || ''),
+    imageUrl: resolveDeviceImageUrl(item.devicePhotoUrl || item.photoUrl || ''),
     summary: item.description || item.describe || '',
     i18nMessages: item.i18nMessages,
     aiSummary: {
