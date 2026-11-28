@@ -1,5 +1,5 @@
 <template>
-  <I18nTextEditable :key="`${projectId}:${deviceId}`" :value="name" :i18n-messages="i18nMessages" field="name" :title="displayName" size="small" :label="t('UnifiedDeviceList.name')" :disabled="!allowed || disabled" :save="save" save-feedback :i18n-max-length="64" />
+  <I18nTextEditable :key="`${projectId}:${deviceId}`" :value="name" :i18n-messages="i18nMessages" field="name" :title="displayName" size="small" :label="t('UnifiedDeviceList.name')" :disabled="!allowed || disabled" :save="save" save-feedback :i18n-max-length="64" :fit-min-size="16" />
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
