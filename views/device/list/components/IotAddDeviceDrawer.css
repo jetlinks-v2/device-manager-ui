@@ -1262,7 +1262,7 @@
 
 .add-device__fields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-3);
 }
 
@@ -1289,6 +1289,11 @@
 
 .add-device__fields--stacked {
   grid-template-columns: 1fr;
+}
+
+.add-device__edit-fields .add-device__identity {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--jet-theme-border-secondary);
 }
 
 .add-device__field {

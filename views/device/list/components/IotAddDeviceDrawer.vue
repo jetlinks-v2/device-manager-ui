@@ -1,7 +1,7 @@
 <template>
-  <a-modal :open="open" :width="960" :mask-closable="false" centered @cancel="onActiveClose">
+  <a-modal :open="open" :width="isEditMode ? 640 : 960" :class="{ 'jl-modal--plain': isEditMode }" :mask-closable="false" centered @cancel="onActiveClose">
     <template #title>
-      <IotAddDeviceModalTitle :edit-mode="isEditMode" :current-step="currentStep" :creating="isCreating" :creation-source="creationSource" />
+      <IotAddDeviceModalTitle :edit-mode="isEditMode" :title-text="isEditMode ? $t('IotDeviceDetail.header.deviceInfo') : ''" :current-step="currentStep" :creating="isCreating" :creation-source="creationSource" />
     </template>
     <section class="add-device">
       <a-alert v-if="activeErrorMessage && !isCreating" type="error" show-icon :message="activeErrorMessage" />
@@ -64,11 +64,11 @@
       <a-form v-else :ref="setActiveFormRef" class="add-device__form" layout="vertical" :model="activeForm" :rules="activeFormRules">
         <IotDeviceBasicFields
           v-if="isEditMode"
+          class="add-device__edit-fields"
           :form="activeForm"
           :area-tree-data="activeAreaTreeData"
           :group-tree-data="activeGroupTreeData"
           :group-multiple="true"
-          stack-fields
           show-icon
           :show-area="editSpaceAreaSupported !== false"
           :on-area-change="activeOnAreaChange"
