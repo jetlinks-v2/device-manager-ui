@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadMetricTestModule } from './metricTestModule.mjs'
-const { metricReturnQuery, metricReferenceFromQuery, metricWorkspaceSelectionFromQuery, metricWorkspaceQuery, metricScopeKey, metricBusinessQuery } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/location.ts')
+const { metricReturnQuery, metricReferenceFromQuery, metricWorkspaceSelectionFromQuery, metricWorkspaceQuery, metricScopeKey, metricBusinessQuery } = await loadMetricTestModule('../../rule-engine-manager-ui/components/Metric/location.ts')
 
 test('non-first metric and output survive owner-specific return locations', () => {
   const reference = { configId: 'second-config', outputId: 'second-output' }

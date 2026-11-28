@@ -1,21 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import dayjs from 'dayjs'
 import { ObjectDataView } from '@jetlinks-web-core/components/ObjectOverview'
-import type { ObjectCapabilityValue, ObjectPropertyMetadata } from '@jetlinks-web-core/components/ObjectOverview'
-const props = defineProps<{ value?: ObjectCapabilityValue; state: 'loading' | 'ready' | 'failed' }>()
+import type { ObjectPropertyMetadata } from '@jetlinks-web-core/components/ObjectOverview'
 interface Snapshot { deviceId: string; metadata: ObjectPropertyMetadata; value: unknown; timestamp?: number }
-const rows = computed(() => props.value?.values.flatMap(item => item.value as Snapshot[]) || [])
+defineProps<{ value: Snapshot }>()
 </script>
 <template>
-  <ObjectDataView v-if="state !== 'ready'" :state="state" />
-  <div v-else class="object-property-snapshots">
-    <article v-for="(row, index) in rows" :key="index">
-      <span>{{ row.metadata.name || row.metadata.id }}</span>
-      <ObjectDataView :value="row.value" :metadata="row.metadata.valueType" />
-      <time v-if="row.timestamp != null" :datetime="new Date(row.timestamp).toISOString()">{{ dayjs(row.timestamp).format('MM-DD HH:mm:ss') }}</time>
+  <div class="object-property-snapshots">
+    <article>
+      <span>{{ value.metadata.name || value.metadata.id }}</span>
+      <ObjectDataView :value="value.value" :metadata="value.metadata.valueType" />
+      <time v-if="value.timestamp != null" :datetime="new Date(value.timestamp).toISOString()">{{ dayjs(value.timestamp).format('MM-DD HH:mm:ss') }}</time>
     </article>
-    <ObjectDataView v-if="!rows.length" />
   </div>
 </template>
 <style scoped>

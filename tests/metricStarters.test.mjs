@@ -3,9 +3,9 @@ import test from 'node:test'
 import { loadMetricTestModule } from './metricTestModule.mjs'
 
 const { iotMetricStarters: starters } = await loadMetricTestModule('../views/metric/Template/starters.ts')
-const { localizedTemplate, metricTemplateTextEntries } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/text.ts')
-const { captureTemplateExample } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/templateAuthoring.ts')
-const { structureMetricTemplate } = await loadMetricTestModule('../../../jetlinks-web-core/src/components/Metric/template/structureExpressions.ts')
+const { localizedTemplate, metricTemplateTextEntries } = await loadMetricTestModule('../../rule-engine-manager-ui/components/Metric/template/text.ts')
+const { captureTemplateExample } = await loadMetricTestModule('../../rule-engine-manager-ui/components/Metric/template/templateAuthoring.ts')
+const { structureMetricTemplate } = await loadMetricTestModule('../../rule-engine-manager-ui/components/Metric/template/structureExpressions.ts')
 
 test('default references cover IoT capabilities without domain-specific decisions or invented scores',()=>{
   assert.deepEqual(starters.map(item=>item.id),['communication-observation','connection-duration','state-duration','sample-mean','counter-usage','persistent-limit','measurement-difference','scope-connectivity','counter-cycle-usage','condition-deviation-observation','trend-threshold-observation','fixed-reference-drift','paired-signal-observation','sensor-flat-observation','operation-failures','power-energy','time-weighted-temperature','pressure-variation','response-latency','vibration-amplitude','rapid-temperature-rise','level-volume-calibration','level-spike-filter','pressure-stable-segment','temperature-hysteresis','load-compensated-temperature','specific-energy-deviation','actuator-response-degradation'])
